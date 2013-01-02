@@ -50,10 +50,10 @@ Accessor for the HTTP response status string: `OK`, `Insufficient Privileges`,
 etc.
 
 ### make-parser (function)
-{% highlight cl %}
+```common-lisp
 (defun make-parser (http &key header-cb body-cb store-body)
   => lambda
-{% endhighlight %}
+```
 
 This is what you've all been waiting for, folks. This function initializes an
 HTTP parser (a closure) which can be fed binary data in sequence and will
@@ -84,7 +84,7 @@ The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
 best way to get the body data is via the [body-cb](#make-parser-body-cb).
 
-{% highlight cl %}
+```common-lisp
 ;; example. anything under my-app is not included.
 (let ((http (make-instance 'http-response))
       (parser (make-parser http-response
@@ -98,30 +98,30 @@ best way to get the body data is via the [body-cb](#make-parser-body-cb).
       (when body-finished-p
         (my-app:close-http-stream))
       ...)))
-{% endhighlight %}
+```
 
 ##### Parser lambda definition
-{% highlight cl %}
+```common-lisp
 (lambda (byte-array) ...)
   => http, headers-finished-p, body-finished-p
-{% endhighlight %}
+```
 
 As noted, if an EOF happens on the socket the HTTP data is coming in on, you may
 indicate this to the parser by sending in `:eof` instead of the byte array.
 
 ##### header-cb definition
-{% highlight cl %}
+```common-lisp
 (lambda (header-plist) ...)
-{% endhighlight %}
+```
 
 Headers are in the form `'(:host "musio.com" :content-type "text/html" ...)`.
 Headers are __not__ reversed, they are passed in the order they occur in the
 HTTP payload.
 
 ##### body-cb definition
-{% highlight cl %}
+```common-lisp
 (lambda (byte-array) ...)
-{% endhighlight %}
+```
 
 Byte-array is __not__ cumulative, it is just the *new* data that has been parsed
 from the payload. If multiple chunks are parsed at once, their body data is sent
