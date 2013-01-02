@@ -55,7 +55,7 @@ etc.
 
 ### make-parser (function)
 ```common-lisp
-(defun make-parser (http &key header-cb body-cb store-body)
+(defun make-parser (http &key header-callback body-callback store-body)
   => lambda
 ```
 
@@ -76,26 +76,26 @@ The parser closure returns three values: the [http](#http) object passed in, a
 boolean indicating if the headers are finished parsing, and a boolean indicating
 if the HTTP body has been fully parsed.
 
-`make-parser accepts two callbacks, `:header-cb` and `:body-cb`. The
-[header callback](#make-parser-header-cb) is fired when all the headers have
+`make-parser accepts two callbacks, `:header-callback` and `:body-callback`. The
+[header callback](#make-parser-header-callback) is fired when all the headers have
 been parsed. It takes one argument, a plist of finished headers. The [body
-callback](#make-parser-body-cb) is called either when the entire body has been
-received (in the case of `:content-length` being present in the headers) or
+callback](#make-parser-body-callback) is called either when the entire body has
+been received (in the case of `:content-length` being present in the headers) or
 piece by piece as it is sent in (when the body is chunked).
 
 <a id="make-parser-store-body"></a>
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
-best way to get the body data is via the [body-cb](#make-parser-body-cb).
+best way to get the body data is via the [body-callback](#make-parser-body-callback).
 
 ```common-lisp
 ;; example. anything under my-app is not included.
 (let ((http (make-instance 'http-response))
       (parser (make-parser http-response
-                           :header-cb (lambda (headers)
-                                        (my-app:got-headers!!! headers))
-                           :body-cb (lambda (bytes)
-                                      (my-app:got-body-piece bytes)))))
+                           :header-callback (lambda (headers)
+                                              (my-app:got-headers!!! headers))
+                           :body-callback (lambda (bytes)
+                                              (my-app:got-body-piece bytes)))))
   (loop for http-data = (my-app:get-http-data-from-request-i-sent-out-earlier) do
     (multiple-value-bind (http headers-finished-p body-finished-p)
         (funcall parser http-data)
@@ -113,7 +113,7 @@ best way to get the body data is via the [body-cb](#make-parser-body-cb).
 As noted, if an EOF happens on the socket the HTTP data is coming in on, you may
 indicate this to the parser by sending in `:eof` instead of the byte array.
 
-##### header-cb definition
+##### header-callback definition
 ```common-lisp
 (lambda (header-plist) ...)
 ```
@@ -122,15 +122,15 @@ Headers are in the form `'(:host "musio.com" :content-type "text/html" ...)`.
 Headers are __not__ reversed, they are passed in the order they occur in the
 HTTP payload.
 
-##### body-cb definition
+##### body-callback definition
 ```common-lisp
 (lambda (byte-array) ...)
 ```
 
 Byte-array is __not__ cumulative, it is just the *new* data that has been parsed
 from the payload. If multiple chunks are parsed at once, their body data is sent
-in as one call to the `body-cb`. Incomplete chunks are *not* sent in until they
-are completed.
+in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
+they are completed.
 
 Tests
 -----

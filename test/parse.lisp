@@ -111,10 +111,10 @@ Date: May 7, 2028"
            (http (make-instance 'http-parse:http-request))
            (parser (make-parser http
                                 :store-body t
-                                :header-cb (lambda (h)
-                                             (setf parsed-headers h))
-                                :body-cb (lambda (data)
-                                           (push data body-chunks)))))
+                                :header-callback (lambda (h)
+                                                   (setf parsed-headers h))
+                                :body-callback (lambda (data)
+                                                 (push data body-chunks)))))
       (multiple-value-bind (http-ret headers-complete body-complete)
           (funcall parser chunk1)
         (is (eql http http-ret) "chunk1 http: ~a != ~a" http-ret http)
@@ -159,10 +159,10 @@ Date: May 7, 2028"
            (http (make-instance 'http-parse:http-response))
            (parser (make-parser http
                                 :store-body t
-                                :header-cb (lambda (h)
-                                             (setf parsed-headers h))
-                                :body-cb (lambda (data)
-                                           (push data body-chunks)))))
+                                :header-callback (lambda (h)
+                                                   (setf parsed-headers h))
+                                :body-callback (lambda (data)
+                                                 (push data body-chunks)))))
       (multiple-value-bind (http-ret headers-complete body-complete)
           (funcall parser chunk1)
         (is (eql http http-ret) "chunk1 http: ~a != ~a" http-ret http)
