@@ -193,7 +193,7 @@
         (have-headers nil)
         (content-length nil)
         (chunked nil)
-        (body-start nil)
+        (body-start nil) ; TODO remove, no longer needed
         (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10))))
     (lambda (data)
       (block parse-wrap
