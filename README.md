@@ -91,7 +91,7 @@ best way to get the body data is via the [body-callback](#make-parser-body-callb
 ```common-lisp
 ;; example. anything under my-app is not included.
 (let ((http (make-instance 'http-response))
-      (parser (make-parser http-response
+      (parser (make-parser http
                            :header-callback (lambda (headers)
                                               (my-app:got-headers!!! headers))
                            :body-callback (lambda (bytes)
