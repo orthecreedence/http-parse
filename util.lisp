@@ -10,13 +10,14 @@
       (replace arr arr2 :start1 arr1-length)
       arr)))
 
-(defun find-non-whitespace-pos (seq)
+(defun find-non-whitespace-pos (seq &key (start 0))
   "Find the position of the first non-whitespace character in a sequence."
-  (loop for i from 0
-        for byte across seq do
-    (unless (or (= byte 9)
-                (= byte 10)
-                (= byte 13)
-                (= byte 32))
-      (return-from find-non-whitespace-pos i))))
+  (dotimes (i (- (length seq) start))
+    (let* ((i (+ i start))
+           (byte (aref seq i)))
+      (unless (or (eq byte 9) (eq byte #\tab)
+                  (eq byte 13) (eq byte #\return)
+                  (eq byte 10) (eq byte #\newline)
+                  (eq byte 32) (eq byte #\space))
+        (return-from find-non-whitespace-pos i)))))
 

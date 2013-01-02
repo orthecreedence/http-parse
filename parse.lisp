@@ -3,7 +3,7 @@
 (defclass http ()
   ((version :accessor http-version :initarg :version :initform 1)
    (headers :accessor http-headers :initarg :headers :initform nil)
-   (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8) :adjustable t :fill-pointer t)))
+   (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8))))
   (:documentation "Base HTTP class, holds data common to both requests and responses."))
    
 (defclass http-request (http)
@@ -59,8 +59,9 @@
     (let ((header-start (cl-ppcre:scan *scanner-find-first-header* str)))
       (when header-start
         (if get-previous-line
-            (let* ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0)))
-              (subseq str previous-line-pos header-end))
+            (let* ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0))
+                   (str-w-prev-line (subseq str previous-line-pos header-end)))
+              (subseq str-w-prev-line (find-non-whitespace-pos str-w-prev-line)))
             (subseq str header-start header-end))))))
 
 (defun convert-headers-plist (header-str)
@@ -70,7 +71,7 @@
                       (numberp (cl-ppcre:scan *scanner-numeric* (cadr kv)))
                       (val (if numberp
                                (read-from-string (cadr kv))
-                               (string-downcase (cadr kv)))))
+                               (cadr kv))))
                  (list (intern (string-upcase (car kv)) :keyword)
                        val))))
 
@@ -89,7 +90,7 @@
              (resource-start (search " " top-line))
              (version-start (search "HTTP/" top-line :start2 (1+ resource-start))))
         (setf (http-headers http) (convert-headers-plist header-str))
-        (setf (http-method http) (subseq top-line 0 resource-start))
+        (setf (http-method http) (intern (subseq top-line 0 resource-start) :keyword))
         (if version-start
             (let* ((version-str (subseq top-line version-start))
                    (version (read-from-string (subseq version-str (1+ (search "/" version-str))))))
@@ -97,7 +98,6 @@
               (setf (http-version http) version))
             (setf (http-resource http) (subseq top-line (1+ resource-start))))
         (values (http-headers http) http)))))
-
 
 (defmethod parse-headers ((http http-response) (bytes vector))
   (let ((header-str (get-header-block bytes :get-previous-line t)))
@@ -132,11 +132,9 @@
              (chunk-length-seq-start (or (find-non-whitespace-pos chunk-blob) 0))
              (chunk-length-seq-end (or (search search-line-end chunk-blob :start2 chunk-length-seq-start)
                                        chunk-length-seq-start))
-             ;(lol (format t "~%length start/end: ~a/~a~%" chunk-length-seq-start chunk-length-seq-end))
+             ;(lol (format t "~%CHUNK: length start/end: ~a/~a~%" chunk-length-seq-start chunk-length-seq-end))
              (chunk-length-seq (subseq chunk-blob chunk-length-seq-start chunk-length-seq-end))
-             ;(lol (if (< 24 (length chunk-blob))
-             ;         (subseq chunk-blob 0 24)
-             ;         chunk-blob))
+             ;(lol (subseq chunk-blob 0 (min 64 (length chunk-blob))))
              ;(lol (format t "CHUNK BEG: ~a ~a (~s)~%" (find-non-whitespace-pos chunk-blob) lol (babel:octets-to-string lol)))
              ;(lol (format t "CHUNK BEG: ~s~%" (babel:octets-to-string chunk-length-seq)))
              (chunk-length (ignore-errors
@@ -144,31 +142,55 @@
                                (babel:octets-to-string chunk-length-seq)
                                :radix 16)))
              (chunk-start-pos (+ chunk-length-seq-end 2))
-             ;(lol (format t "calculating chunk: ~a + ~a~%" chunk-start-pos chunk-length))
+             ;(lol (format t "CHUNK: calculating chunk: ~a + ~a~%" chunk-start-pos chunk-length))
              )
         (unless chunk-length (return))
         (let ((chunk (subseq chunk-blob chunk-start-pos (min (length chunk-blob) (+ chunk-start-pos (or chunk-length 0))))))
-          ;(format t "chunk (~s): ~a~%" (length chunk-blob) (subseq (babel:octets-to-string chunk) 0 (min (or chunk-length 0) 60)))
+          ;(format t "CHUNK: chunk (~s): ~s ... ~s~%"
+          ;        (length chunk-blob)
+          ;        (subseq (babel:octets-to-string chunk) 0 (min (or chunk-length 0) 80))
+          ;        (subseq (babel:octets-to-string chunk) (- (min (length chunk) chunk-length) 80)))
           (cond
             ((eq chunk-length 0)
-             ;(format t "zero chunk~%")
+             ;(format t "CHUNK: zero chunk~%")
              (setf completep t)
              (return))
             ((numberp chunk-length)
-             ;(format t "chunk length: ~a/~a~%" (length chunk) chunk-length)
+             ;(format t "CHUNK: chunk length: ~a/~a~%" (length chunk) chunk-length)
              (when (<= chunk-length (length chunk))
                (setf chunk-data (append-array chunk-data chunk)
                      chunk-start (+ chunk-start chunk-length chunk-start-pos))))
             (t
              (return))))
-        ;(format t "last-chunk/start: ~a/~a~%" last-chunk-start chunk-start)
+        ;(format t "CHUNK: last-chunk/start: ~a/~a~%" last-chunk-start chunk-start)
         ))
     (values chunk-data chunk-start completep)))
 
-(defgeneric make-parser (http header-cb data-cb &key store-body)
-  (:documentation "Return a parser for an HTTP request/response."))
+(defgeneric make-parser (http &key header-cb body-cb store-body)
+  (:documentation
+    "Return a closure that parses an HTTP request/response by calling it with
+     the bytes received as its only argument. The closure returns three values:
+     the http object passed in, a boolean representing whether the headers have
+     been fully parsed, and a boolean representing whether the request/response
+     is finished (blank body, all body bytes accounted for, or 0-length chunk
+     received).
+     
+     During the parsing, the closure will call (if specified) the `header-cb`
+     with all the headers as a plist once they are fully parsed, and the
+     `body-cb` with the body once either it finishes parsing (if we have
+     Content-Length) or once for each set of completed chunks sent, which allows
+     streaming the body as it comes in.
+     
+     The :store-body keyword indicates to the parser that we wish to keep the
+     body (in its entirety) in the http object passed in (accessible via the
+     http-body accessor). Otherwise, the body will be discarded as it's parsed
+     (but remember, will still be sent to the body-cb as it comes in).
+     
+     Parsing can be forced to completion by padding :EOF into the data arg. It
+     is recommended to do this if the client/server closes the connection before
+     you do."))
 
-(defmethod make-parser ((http http) (header-cb function) (data-cb function) &key store-body)
+(defmethod make-parser ((http http) &key header-cb body-cb store-body)
   (let ((http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (body-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (have-headers nil)
@@ -187,7 +209,7 @@
 
         ;; store the new data
         (setf http-bytes (append-array http-bytes data))
-        
+
         ;; grab/parse the headers. if headers aren't fully present, we return
         ;; without trying to parse the body
         (unless have-headers
@@ -201,7 +223,8 @@
                         have-headers t)
 
                   ;; let "interested parties" know that the headers are complete
-                  (funcall header-cb headers)
+                  (when header-cb
+                    (funcall header-cb headers))
 
                   (cond
                     ;; we have a content length. this makes things easy...
@@ -214,21 +237,21 @@
                     ;; TODO: is this correct for HTTP 1.0??
                     (t
                      (return-from parse-wrap (values http t t)))))
-                (return-from parse-wrap))))
+                (return-from parse-wrap (values http nil nil)))))
 
         ;; we have parsed headers. start work on the body
         (cond
           (chunked
             (multiple-value-bind (chunk-data next-chunk-start completep)
                 (get-complete-chunks http-bytes)
-              (when chunk-data
+              (when (< 0 (length chunk-data))
                 (setf body-start 0
                       http-bytes (subseq http-bytes next-chunk-start))
-                (funcall data-cb chunk-data)
-                (when (and completep store-body)
-                  (setf body-bytes (append-array body-bytes chunk-data))
-                  (setf (http-body http) body-bytes))
-                (return-from parse-wrap (values http t completep)))))
+                (when body-cb
+                  (funcall body-cb chunk-data))
+                (setf body-bytes (append-array body-bytes chunk-data))
+                (setf (http-body http) body-bytes))
+              (return-from parse-wrap (values http t completep))))
           (content-length
             (let* ((body (subseq http-bytes body-start (length http-bytes)))
                    (body-length (length body)))
@@ -239,7 +262,8 @@
                                 (subseq http-bytes 0 (+ body-start content-length)))))
                   (when store-body
                     (setf (http-body http) body))
-                  (funcall data-cb body)
+                  (when body-cb
+                    (funcall body-cb body))
                   (return-from parse-wrap
                                (values http t t))))))
           (t

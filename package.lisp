@@ -1,4 +1,13 @@
 (defpackage :http-parse
   (:use :cl)
-  (:export #:make-request-parser
-           #:make-response-parser))
+  (:export #:http
+           #:http-version
+           #:http-headers
+           #:http-body
+           #:http-request
+           #:http-method
+           #:http-resource
+           #:http-response
+           #:http-status
+           #:http-status-text
+           #:make-parser))
