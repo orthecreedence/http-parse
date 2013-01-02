@@ -128,6 +128,17 @@ from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-cb`. Incomplete chunks are *not* sent in until they
 are completed.
 
+Tests
+-----
+Tests are under the `http-parse-test` package:
+
+```common-lisp
+(ql:quickload :http-parse-test)
+(http-parse-test:run-tests)
+```
+
+Please report any bugs you find or failing tests to the [issues list](https://github.com/orthecreedence/http-parse/issues).
+
 License
 -------
 MIT Licensed. Enjoy.
