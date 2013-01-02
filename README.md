@@ -4,6 +4,10 @@ A pure-lisp library for parsing HTTP requests/responses. Right now the focus for
 this library is making it useful and easy to use. With time, slower parts of
 http-parse will be replaced to make it screaming fast.
 
+The purpose of this library is to be able to easily parse incoming HTTP data
+either synchronously *or* asynchronously (but it was mainly built for streaming
+HTTP data asynchronously).
+
 Documentation
 -------------
 
