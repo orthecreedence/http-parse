@@ -166,7 +166,7 @@
         ))
     (values chunk-data chunk-start completep)))
 
-(defun make-parser (http &key headers-callback body-callback store-body)
+(defun make-parser (http &key header-callback body-callback store-body)
   "Return a closure that parses an HTTP request/response by calling it with
    the bytes received as its only argument. The closure returns three values:
    the http object passed in, a boolean representing whether the headers have
