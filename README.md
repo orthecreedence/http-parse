@@ -76,7 +76,7 @@ The parser closure returns three values: the [http](#http) object passed in, a
 boolean indicating if the headers are finished parsing, and a boolean indicating
 if the HTTP body has been fully parsed.
 
-`make-parser accepts two callbacks, `:header-callback` and `:body-callback`. The
+`make-parser` accepts two callbacks, `:header-callback` and `:body-callback`. The
 [header callback](#make-parser-header-callback) is fired when all the headers have
 been parsed. It takes one argument, a plist of finished headers. The [body
 callback](#make-parser-body-callback) is called either when the entire body has
