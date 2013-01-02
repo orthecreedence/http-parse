@@ -166,31 +166,28 @@
         ))
     (values chunk-data chunk-start completep)))
 
-(defgeneric make-parser (http &key header-cb body-cb store-body)
-  (:documentation
-    "Return a closure that parses an HTTP request/response by calling it with
-     the bytes received as its only argument. The closure returns three values:
-     the http object passed in, a boolean representing whether the headers have
-     been fully parsed, and a boolean representing whether the request/response
-     is finished (blank body, all body bytes accounted for, or 0-length chunk
-     received).
-     
-     During the parsing, the closure will call (if specified) the `header-cb`
-     with all the headers as a plist once they are fully parsed, and the
-     `body-cb` with the body once either it finishes parsing (if we have
-     Content-Length) or once for each set of completed chunks sent, which allows
-     streaming the body as it comes in.
-     
-     The :store-body keyword indicates to the parser that we wish to keep the
-     body (in its entirety) in the http object passed in (accessible via the
-     http-body accessor). Otherwise, the body will be discarded as it's parsed
-     (but remember, will still be sent to the body-cb as it comes in).
-     
-     Parsing can be forced to completion by padding :EOF into the data arg. It
-     is recommended to do this if the client/server closes the connection before
-     you do."))
-
-(defmethod make-parser ((http http) &key header-cb body-cb store-body)
+(defun make-parser (http &key header-cb body-cb store-body)
+  "Return a closure that parses an HTTP request/response by calling it with
+   the bytes received as its only argument. The closure returns three values:
+   the http object passed in, a boolean representing whether the headers have
+   been fully parsed, and a boolean representing whether the request/response
+   is finished (blank body, all body bytes accounted for, or 0-length chunk
+   received).
+   
+   During the parsing, the closure will call (if specified) the `header-cb`
+   with all the headers as a plist once they are fully parsed, and the
+   `body-cb` with the body once either it finishes parsing (if we have
+   Content-Length) or once for each set of completed chunks sent, which allows
+   streaming the body as it comes in.
+   
+   The :store-body keyword indicates to the parser that we wish to keep the
+   body (in its entirety) in the http object passed in (accessible via the
+   http-body accessor). Otherwise, the body will be discarded as it's parsed
+   (but remember, will still be sent to the body-cb as it comes in).
+   
+   Parsing can be forced to completion by padding :EOF into the data arg. It
+   is recommended to do this if the client/server closes the connection before
+   you do."
   (let ((http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (body-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (have-headers nil)
