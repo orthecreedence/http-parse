@@ -28,7 +28,8 @@ Accessor for the headers parsed from the HTTP request/response
 
 ##### http-body
 Accessor for the full HTTP body from the request/response (although storing of the
-body in the `http` object must be [explicitely asked for](#make-parser-store-body)).
+body in the `http` object must be explicitely asked for by passing `:store-body t`
+into [make-parser](#make-parser).
 
 ### http-request (class)
 _extends [http](#http)_
@@ -83,7 +84,6 @@ callback](#make-parser-body-callback) is called either when the entire body has
 been received (in the case of `:content-length` being present in the headers) or
 piece by piece as it is sent in (when the body is chunked).
 
-<a id="make-parser-store-body">&nbsp;</a>
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
 best way to get the body data is via the [body-callback](#make-parser-body-callback).
