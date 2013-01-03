@@ -83,7 +83,7 @@ callback](#make-parser-body-callback) is called either when the entire body has
 been received (in the case of `:content-length` being present in the headers) or
 piece by piece as it is sent in (when the body is chunked).
 
-<a id="make-parser-store-body"></a>
+<a id="make-parser-store-body">&nbsp;</a>
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
 best way to get the body data is via the [body-callback](#make-parser-body-callback).
