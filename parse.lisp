@@ -50,19 +50,18 @@
 (defun get-header-block (bytes &key get-previous-line)
   "Given the bytes of an HTTP request/response, pull out only the headers and
    optionally the line above the start of the headers. Returns the headers as a
-   string and also the start position of the body of the HTTP request."
-  (let* ((str (babel:octets-to-string bytes))
-         (search-section-end (make-array 4 :element-type 'character :initial-contents #(#\return #\newline #\return #\newline)))
-         (header-end (search search-section-end str)))
-    (unless header-end
+   string."
+  (let ((header-block (subseq bytes 0 (search #(13 10 13 10) bytes))))
+    (unless header-block
       (return-from get-header-block))
-    (let ((header-start (cl-ppcre:scan *scanner-find-first-header* str)))
+    (let* ((str (babel:octets-to-string header-block))
+           (header-start (cl-ppcre:scan *scanner-find-first-header* str)))
       (when header-start
         (if get-previous-line
             (let* ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0))
-                   (str-w-prev-line (subseq str previous-line-pos header-end)))
+                   (str-w-prev-line (subseq str previous-line-pos)))
               (subseq str-w-prev-line (find-non-whitespace-pos str-w-prev-line)))
-            (subseq str header-start header-end))))))
+            (subseq str header-start))))))
 
 (defun convert-headers-plist (header-str)
   "Pull out headers in a plist from a string."
