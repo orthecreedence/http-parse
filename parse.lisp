@@ -116,8 +116,8 @@
 
 (defun get-complete-chunks (data)
   "Given a chunk (octet vector) of HTTP data, return only the data from the
-   *complete* chunks in the data and, return the position in the byte vector
-   of the start of the next chunk, and lastly return whether the last chunk (the
+   *complete* chunks in the data and return the position in the byte vector of
+   the start of the next chunk, and lastly return whether the last chunk (the
    0-byte chunk) has been parsed (ie, HTTP body complete)."
   (let ((last-chunk-start -1)
         (completep nil)
@@ -132,38 +132,24 @@
              (chunk-length-seq-start (or (find-non-whitespace-pos chunk-blob) 0))
              (chunk-length-seq-end (or (search search-line-end chunk-blob :start2 chunk-length-seq-start)
                                        chunk-length-seq-start))
-             ;(lol (format t "~%CHUNK: length start/end: ~a/~a~%" chunk-length-seq-start chunk-length-seq-end))
              (chunk-length-seq (subseq chunk-blob chunk-length-seq-start chunk-length-seq-end))
-             ;(lol (subseq chunk-blob 0 (min 64 (length chunk-blob))))
-             ;(lol (format t "CHUNK BEG: ~a ~a (~s)~%" (find-non-whitespace-pos chunk-blob) lol (babel:octets-to-string lol)))
-             ;(lol (format t "CHUNK BEG: ~s~%" (babel:octets-to-string chunk-length-seq)))
              (chunk-length (ignore-errors
                              (parse-integer
                                (babel:octets-to-string chunk-length-seq)
                                :radix 16)))
-             (chunk-start-pos (+ chunk-length-seq-end 2))
-             ;(lol (format t "CHUNK: calculating chunk: ~a + ~a~%" chunk-start-pos chunk-length))
-             )
+             (chunk-start-pos (+ chunk-length-seq-end 2)))
         (unless chunk-length (return))
         (let ((chunk (subseq chunk-blob chunk-start-pos (min (length chunk-blob) (+ chunk-start-pos (or chunk-length 0))))))
-          ;(format t "CHUNK: chunk (~s): ~s ... ~s~%"
-          ;        (length chunk-blob)
-          ;        (subseq (babel:octets-to-string chunk) 0 (min (or chunk-length 0) 80))
-          ;        (subseq (babel:octets-to-string chunk) (- (min (length chunk) chunk-length) 80)))
           (cond
             ((eq chunk-length 0)
-             ;(format t "CHUNK: zero chunk~%")
              (setf completep t)
              (return))
             ((numberp chunk-length)
-             ;(format t "CHUNK: chunk length: ~a/~a~%" (length chunk) chunk-length)
              (when (<= chunk-length (length chunk))
                (setf chunk-data (append-array chunk-data chunk)
                      chunk-start (+ chunk-start chunk-length chunk-start-pos))))
             (t
-             (return))))
-        ;(format t "CHUNK: last-chunk/start: ~a/~a~%" last-chunk-start chunk-start)
-        ))
+             (return))))))
     (values chunk-data chunk-start completep)))
 
 (defun make-parser (http &key header-callback body-callback store-body)
