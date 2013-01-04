@@ -8,6 +8,9 @@
 ;; http-parse::parse-headers
 ;; http-parse::get-complete-chunks
 ;; http-parse::make-parser
+;; http-parse::append-array
+;; http-parse::find-non-whitespace-pos
+;; cl::subseq
 
 (defclass benchmark ()
   ((start :accessor benchmark-start :initarg :start :initform (get-internal-real-time))
