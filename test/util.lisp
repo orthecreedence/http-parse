@@ -18,7 +18,7 @@
             while (< 0 n) do
         (setf bytes (http-parse::append-array bytes (subseq buffer 0 n)))))
     bytes))
-            
+
 (defun write-file (path contents)
   "Write a binary sequence to a file."
   (let ((s (open path :direction :output :if-exists :supersede :element-type '(unsigned-byte 8))))

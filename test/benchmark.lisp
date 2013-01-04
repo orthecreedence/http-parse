@@ -1,5 +1,14 @@
 (in-package :http-parse-test)
 
+;; ---- profile-list ----
+;; cl-ppcre::split
+;; cl-ppcre::scan
+;; http-parse::get-header-block
+;; http-parse::convert-headers-plist
+;; http-parse::parse-headers
+;; http-parse::get-complete-chunks
+;; http-parse::make-parser
+
 (defclass benchmark ()
   ((start :accessor benchmark-start :initarg :start :initform (get-internal-real-time))
    (end :accessor :benchmark-end :initarg :end :initform nil)))
@@ -11,12 +20,12 @@
     (format t "BENCH: ~a: ~as~%" name seconds)))
 
 (defun bench-parse-speed ()
-  (let* ((response (file-contents (asdf:system-relative-pathname :http-parse "test/data/test-response1.http")))
-         (http (make-instance 'http-response))
-         (parser (make-parser http :store-body t))
-         (bench (make-instance 'benchmark)))
-    (dotimes (i 99)
-      (funcall parser response))
+  (let ((response (file-contents (asdf:system-relative-pathname :http-parse "test/data/test-response1.http")))
+        (bench (make-instance 'benchmark)))
+    (dotimes (i 100)
+      (let* ((http (make-instance 'http-response))
+             (parser (make-parser http :store-body t)))
+        (funcall parser response)))
     (finish-benchmark "Parse speed" bench)))
       
 (defun run-benchmarks ()
