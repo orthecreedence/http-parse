@@ -170,7 +170,7 @@
    http-body accessor). Otherwise, the body will be discarded as it's parsed
    (but remember, will still be sent to the body-callback as it comes in).
    
-   Parsing can be forced to completion by padding :EOF into the data arg. It
+   Parsing can be forced to completion by passing :EOF into the data arg. It
    is recommended to do this if the client/server closes the connection before
    you do."
   (let ((http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
