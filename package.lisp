@@ -4,6 +4,8 @@
            #:http-version
            #:http-headers
            #:http-body
+           #:http-header-callback
+           #:http-body-callback
            #:http-request
            #:http-method
            #:http-resource

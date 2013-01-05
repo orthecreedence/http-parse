@@ -3,7 +3,9 @@
 (defclass http ()
   ((version :accessor http-version :initarg :version :initform 1)
    (headers :accessor http-headers :initarg :headers :initform nil)
-   (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8))))
+   (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8)))
+   (header-callback :accessor http-header-callback :initarg :header-callback :initform nil)
+   (body-callback :accessor http-body-callback :initarg :body-callback :initform nil))
   (:documentation "Base HTTP class, holds data common to both requests and responses."))
    
 (defclass http-request (http)
@@ -173,6 +175,13 @@
    Parsing can be forced to completion by passing :EOF into the data arg. It
    is recommended to do this if the client/server closes the connection before
    you do."
+  ;; set our heroic callbacks into the http object (if specified)
+  (when header-callback
+    (setf (http-header-callback http) header-callback))
+  (when body-callback
+    (setf (http-body-callback http) body-callback))
+
+  ;; create the main closure
   (let ((http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (body-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (have-headers nil)
@@ -205,8 +214,8 @@
                         have-headers t)
 
                   ;; let "interested parties" know that the headers are complete
-                  (when header-callback
-                    (funcall header-callback headers))
+                  (when (http-header-callback http)
+                    (funcall (http-header-callback http) headers))
 
                   (cond
                     ;; we have a content length. this makes things easy...
@@ -229,8 +238,8 @@
               (when (< 0 (length chunk-data))
                 (setf body-start 0
                       http-bytes (subseq http-bytes next-chunk-start))
-                (when body-callback
-                  (funcall body-callback chunk-data))
+                (when (http-body-callback http)
+                  (funcall (http-body-callback http) chunk-data))
                 (setf body-bytes (append-array body-bytes chunk-data))
                 (setf (http-body http) body-bytes))
               (return-from parse-wrap (values http t completep))))
@@ -244,8 +253,8 @@
                                 (subseq http-bytes 0 (+ body-start content-length)))))
                   (when store-body
                     (setf (http-body http) body))
-                  (when body-callback
-                    (funcall body-callback body))
+                  (when (http-body-callback http)
+                    (funcall (http-body-callback http) body))
                   (return-from parse-wrap
                                (values http t t))))))
           (t
