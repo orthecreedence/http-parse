@@ -132,26 +132,6 @@ from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
 
-### decode-multipart-body (function)
-```common-lisp
-(defun decode-multipart-body (content-type-header-value body-bytes))
-  => form-data, file-data
-```  
-Takes the string value from an HTTP request's `Content-Disposition` header along
-with the request's body byte array and returns two hash tables: the form data
-and the file data encoded in the multipart body.
-
-The form data hash is a simple key (string) => value (string) mapping.
-
-The file data hash is a key (string) => meta (plist) mapping. The plist is
-formatted as such:
-
-```common-lisp
-'(:mime-type "application/octet-stream"
-  :filename "my-uploaded-file.jpg"
-  :data #(40 69 184 ...))
-```
-
 Tests
 -----
 Tests are under the `http-parse-test` package:
