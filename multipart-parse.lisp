@@ -17,6 +17,11 @@
     pairs))
 
 (defun make-multipart-parser (headers callback)
+  "Make a multipart parser. Returns a closure that accepts a byte array of data
+   from an HTTP body. Can be sent in in chunks. Callback will be called whenever
+   a complete data chunk is sent in (called for each part in the data chunk) or
+   as a continuation of a chunk that complete headers were sent in for but
+   didn't finish sending in its body."
   (let* ((content-type-header (getf headers :content-type))
          (boundary-str (subseq content-type-header
                                (+ (search "boundary=" content-type-header) 9)))
