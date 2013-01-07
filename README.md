@@ -139,6 +139,10 @@ in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
 
 ### decode-multipart-body
+```common-lisp
+(defun decode-multipart-body (content-type-header-value body-bytes))
+  => form-data, file-data
+```  
 Takes the string value from an HTTP request's `Content-Disposition` header along
 with the request's body byte array and returns two hash tables: the form data
 and the file data encoded in the multipart body.
