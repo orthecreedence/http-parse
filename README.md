@@ -138,7 +138,7 @@ from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
 
-### decode-multipart-body
+### decode-multipart-body (function)
 ```common-lisp
 (defun decode-multipart-body (content-type-header-value body-bytes))
   => form-data, file-data
