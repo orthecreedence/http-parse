@@ -1,0 +1,23 @@
+POST / HTTP/1.1
+User-Agent: curl/7.20.1 (x86_64-unknown-linux-gnu) libcurl/7.20.1 OpenSSL/0.9.8n zlib/1.2.3 libidn/1.5
+Host: 127.0.0.1:8090
+Accept: */*
+Content-Length: 427
+Expect: 100-continue
+Content-Type: multipart/form-data; boundary=----------------------------e74856e71fad
+
+------------------------------e74856e71fad
+Content-Disposition: form-data; name="name"
+
+wookie
+------------------------------e74856e71fad
+Content-Disposition: form-data; name="power"
+
+growl
+------------------------------e74856e71fad
+Content-Disposition: form-data; name="uploadz"; filename="test.lisp"
+Content-Type: application/octet-stream
+
+(format t "omglolwtf~%")
+
+------------------------------e74856e71fad--

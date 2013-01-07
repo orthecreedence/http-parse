@@ -12,4 +12,6 @@
            #:http-response
            #:http-status
            #:http-status-text
-           #:make-parser))
+           #:make-parser
+
+           #:decode-multipart-body))
