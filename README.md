@@ -87,10 +87,12 @@ entire body has been received (in the case of `:content-length` being present in
 the headers) or piece by piece as it is sent in (when the body is chunked).
 - The [multipart callback](#multipart-callback-definition), if specified, is
 passed into a multipart parser, which is given chunks of the body as they come
-in. It decodes multipart form data such for each complete field of the form data
-it decodes, it calls the given callback. If it encounters a field that's split
+in. It decodes multipart form data such that the given callback is fired for
+each form field present in the data. If it encounters a field that is split
 into multiple chunks, it will fire the callback for each of the chunks,
-indicating in one of the arguments whether that is the final chunk or not.
+indicating in one of the arguments whether that is the final chunk or not. This
+makes it possible to stream the multipart data as it comes in (for instance, to
+a file).
 
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
