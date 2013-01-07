@@ -31,6 +31,12 @@ Accessor for the full HTTP body from the request/response (although storing of t
 body in the `http` object must be explicitely asked for by passing `:store-body t`
 into [make-parser](#make-parser).
 
+##### http-header-callback
+Accessor for the HTTP object's [header callback](#header-callback-definition).
+
+##### http-body-callback
+Accessor for the HTTP object's [body callback](#body-callback-definition).
+
 ### http-request (class)
 _extends [http](#http)_
 
@@ -131,6 +137,22 @@ Byte-array is __not__ cumulative, it is just the *new* data that has been parsed
 from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
+
+### decode-multipart-body
+Takes a `Content-Disposition` header from an HTTP request, along with the body
+byte array and returns two hash tables: the form data and the file data encoded
+in the multipart body.
+
+The form data hash is a simple key (string) => value (string) mapping.
+
+The file data hash is a key (string) => meta (plist) mapping. The plist is
+formatted as such:
+
+```common-lisp
+'(:mime-type "application/octet-stream"
+  :filename "my-uploaded-file.jpg"
+  :data #(40 69 184 ...))
+```
 
 Tests
 -----
