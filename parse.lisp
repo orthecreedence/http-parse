@@ -51,8 +51,9 @@
   "Given the bytes of an HTTP request/response, pull out only the headers and
    optionally the line above the start of the headers. Returns the headers as a
    string."
-  (let ((header-block (subseq bytes 0 (search #(13 10 13 10) bytes))))
-    (unless header-block
+  (let* ((header-break (search #(13 10 13 10) bytes))
+         (header-block (subseq bytes 0 header-break)))
+    (unless header-break
       (return-from get-header-block))
     (let* ((str (babel:octets-to-string header-block))
            (header-start (cl-ppcre:scan *scanner-find-first-header* str)))
@@ -151,7 +152,7 @@
              (return))))))
     (values chunk-data chunk-start completep)))
 
-(defun make-parser (http &key header-callback body-callback store-body)
+(defun make-parser (http &key header-callback body-callback multipart-callback store-body)
   "Return a closure that parses an HTTP request/response by calling it with
    the bytes received as its only argument. The closure returns three values:
    the http object passed in, a boolean representing whether the headers have
@@ -179,7 +180,7 @@
         (have-headers nil)
         (content-length nil)
         (chunked nil)
-        (body-start nil) ; TODO remove, no longer needed
+        (multipart-parser nil)  ; we'll init this after we get headers
         (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10))))
     (lambda (data)
       (block parse-wrap
@@ -202,12 +203,16 @@
                       (transfer-encoding-value (getf headers :transfer-encoding)))
                   ;; get rid of the headers. we don't need them anymore
                   (setf http-bytes (subseq http-bytes (+ (search search-body-start http-bytes) 4)))
-                  (setf body-start 0
-                        have-headers t)
+                  (setf have-headers t)
 
                   ;; let "interested parties" know that the headers are complete
                   (when header-callback
                     (funcall header-callback headers))
+
+                  ;; we now have headers, so if we want to parse multipart data,
+                  ;; create the parser
+                  (when multipart-callback
+                    (setf multipart-parser (make-multipart-parser headers multipart-callback)))
 
                   (cond
                     ;; we have a content length. this makes things easy...
@@ -228,26 +233,29 @@
             (multiple-value-bind (chunk-data next-chunk-start completep)
                 (get-complete-chunks http-bytes)
               (when (< 0 (length chunk-data))
-                (setf body-start 0
-                      http-bytes (subseq http-bytes next-chunk-start))
+                (setf http-bytes (subseq http-bytes next-chunk-start))
                 (when body-callback
                   (funcall body-callback chunk-data))
+                (when multipart-parser
+                  (funcall multipart-parser chunk-data))
                 (when store-body
                   (setf body-bytes (append-array body-bytes chunk-data)
                         (http-body http) body-bytes)))
               (return-from parse-wrap (values http t completep))))
           (content-length
-            (let* ((body (subseq http-bytes body-start (length http-bytes)))
+            (let* ((body (subseq http-bytes 0 (length http-bytes)))
                    (body-length (length body)))
               ;; don't "stream" data until we have the full body.
               (when (<= content-length body-length)
                 (let ((body (if (= body-length content-length)
                                 http-bytes
-                                (subseq http-bytes 0 (+ body-start content-length)))))
+                                (subseq http-bytes 0 (+ 0 content-length)))))
                   (when store-body
                     (setf (http-body http) body))
                   (when body-callback
                     (funcall body-callback body))
+                  (when multipart-parser
+                    (funcall multipart-parser body))
                   (return-from parse-wrap
                                (values http t t))))))
           (t
