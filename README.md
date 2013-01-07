@@ -147,7 +147,7 @@ they are completed.
 (lambda (field-name field-headers field-meta body-bytes body-complete-p) ...)
 ```
 
-This callback is fire for each form field encountered in a multipart request.
+This callback is fired for each form field encountered in a multipart request.
 
 The `field-name` arg is a string indicating the name of the form field. The
 `field-headers` arg is a plist containing the headers for that field (generally
