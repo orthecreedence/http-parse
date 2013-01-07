@@ -139,9 +139,9 @@ in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
 
 ### decode-multipart-body
-Takes a `Content-Disposition` header from an HTTP request, along with the body
-byte array and returns two hash tables: the form data and the file data encoded
-in the multipart body.
+Takes the string value from an HTTP request's `Content-Disposition` header along
+with the request's body byte array and returns two hash tables: the form data
+and the file data encoded in the multipart body.
 
 The form data hash is a simple key (string) => value (string) mapping.
 
