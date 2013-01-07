@@ -8,6 +8,5 @@
   ((:file "package")
    (:file "util" :depends-on ("package"))
    (:file "parse" :depends-on ("util"))
-   (:file "multipart" :depends-on ("util"))
    (:file "multipart-parse" :depends-on ("util"))))
 

@@ -83,22 +83,3 @@
             (when (= (length data) data-length)
               (return-from leave-parser))))))))
 
-(defun test ()
-  (let* ((content (http-parse-test::file-contents "test/data/multipart.http"))
-         (content (subseq content (+ 4 (search #(13 10 13 10) content))))
-         (chunk1-sep (search (babel:string-to-octets "power") content))
-         (chunk2-sep (search (babel:string-to-octets "omglol") content))
-         (parser (make-multipart-parser
-                   '(:content-type "multipart/form-data; boundary=----------------------------e74856e71fad")
-                   (lambda (field headers meta data finishedp)
-                     (format t "multipart: ~s~%"
-                             (list field headers meta
-                                   (babel:octets-to-string data)
-                                   finishedp)))))
-         (chunk1 (subseq content 0 chunk1-sep))
-         (chunk2 (subseq content chunk1-sep chunk2-sep))
-         (chunk3 (subseq content chunk2-sep)))
-    (funcall parser chunk1)
-    (funcall parser chunk2)
-    (funcall parser chunk3)))
-
