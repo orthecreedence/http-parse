@@ -31,12 +31,6 @@ Accessor for the full HTTP body from the request/response (although storing of t
 body in the `http` object must be explicitely asked for by passing `:store-body t`
 into [make-parser](#make-parser).
 
-##### http-header-callback
-Accessor for the HTTP object's [header callback](#header-callback-definition).
-
-##### http-body-callback
-Accessor for the HTTP object's [body callback](#body-callback-definition).
-
 ### http-request (class)
 _extends [http](#http)_
 
