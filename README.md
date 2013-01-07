@@ -56,7 +56,7 @@ etc.
 
 ### make-parser (function)
 ```common-lisp
-(defun make-parser (http &key header-callback body-callback store-body)
+(defun make-parser (http &key header-callback body-callback multipart-callback store-body)
   => lambda
 ```
 
@@ -77,12 +77,20 @@ The parser closure returns three values: the [http](#http) object passed in, a
 boolean indicating if the headers are finished parsing, and a boolean indicating
 if the HTTP body has been fully parsed.
 
-`make-parser` accepts two callbacks, `:header-callback` and `:body-callback`. The
-[header callback](#make-parser-header-callback) is fired when all the headers have
-been parsed. It takes one argument, a plist of finished headers. The [body
-callback](#make-parser-body-callback) is called either when the entire body has
-been received (in the case of `:content-length` being present in the headers) or
-piece by piece as it is sent in (when the body is chunked).
+`make-parser` accepts three callbacks, `:header-callback`, `:body-callback`, and
+`:multipart-callback`:
+
+- The [header callback](#header-callback-definition) is fired when all the
+headers have been parsed. It takes one argument, a plist of finished headers.
+- The [body callback](#body-callback-definition) is called either when the
+entire body has been received (in the case of `:content-length` being present in
+the headers) or piece by piece as it is sent in (when the body is chunked).
+- The [multipart callback](#multipart-callback-definition), if specified, is
+passed into a multipart parser, which is given chunks of the body as they come
+in. It decodes multipart form data such for each complete field of the form data
+it decodes, it calls the given callback. If it encounters a field that's split
+into multiple chunks, it will fire the callback for each of the chunks,
+indicating in one of the arguments whether that is the final chunk or not.
 
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
@@ -131,6 +139,27 @@ Byte-array is __not__ cumulative, it is just the *new* data that has been parsed
 from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
+
+##### multipart-callback definition
+```common-lisp
+(lambda (field-name field-headers field-meta body-bytes body-complete-p) ...)
+```
+
+This callback is fire for each form field encountered in a multipart request.
+
+The `field-name` arg is a string indicating the name of the form field. The
+`field-headers` arg is a plist containing the headers for that field (generally
+this is `Content-Disposition` and sometimes `Content-Type` for uploads). The
+`field-meta` arg is a plist of key/value pairs found in the `Content-Disposition`
+header for the field (this is where the `field-name` arg comes from, and is also
+used to specify the filename of uploaded files). `body-bytes` is a byte array
+containing all or a chunk of that field's data, and `body-complete-p` indicates
+whether or not the `body-bytes` being sent into the callback is the last bit of
+data for that field.
+
+Generally, this callback will be a closure that is able to track the current
+field it's operating on and be able to handle the case where `body-bytes` is
+spread over multiple calls if `body-complete-p` is `nil`.
 
 Tests
 -----
