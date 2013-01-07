@@ -232,8 +232,9 @@
                       http-bytes (subseq http-bytes next-chunk-start))
                 (when body-callback
                   (funcall body-callback chunk-data))
-                (setf body-bytes (append-array body-bytes chunk-data))
-                (setf (http-body http) body-bytes))
+                (when store-body
+                  (setf body-bytes (append-array body-bytes chunk-data)
+                        (http-body http) body-bytes)))
               (return-from parse-wrap (values http t completep))))
           (content-length
             (let* ((body (subseq http-bytes body-start (length http-bytes)))
