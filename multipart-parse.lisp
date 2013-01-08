@@ -38,8 +38,12 @@
                      "multipart/form-data;")
       (return-from make-multipart-parser nil))
     (lambda (chunk-data)
+      ;; continuously append new data to our data array
       (setf data (append-array data chunk-data))
       (block leave-parser
+        ;; define a function that sends parsed multipart data to the given
+        ;; callback and trims the `data` variable of bytes that have been parsed
+        ;; (to keep it continuously small).
         (flet ((send-data-to-callback (body-start body-end body-complete-p)
                  (let ((send-data (subseq data body-start (if body-complete-p body-end nil))))
                    (funcall callback
@@ -47,14 +51,22 @@
                             send-data
                             body-complete-p))
                  (if body-complete-p
+                     ;; there are no more chunks in thie field, make sure we mark
+                     ;; the state vars as such, and trim the data down to the next
+                     ;; boundary
                      (progn
                        (setf current-field-headers nil
                              current-field-name nil
                              current-field-kv nil
                              just-finished-chunk t)
                        (setf data (subseq data (+ 2 body-end boundary-length))))
+                     ;; there are more chunks but we don't have the data yet.
+                     ;; truncate `data`.
                      (setf data (make-array 0 :element-type '(unsigned-byte 8))))))
-          ;; loop until no more boundaries found
+          ;; loop until while there are more chunk boundaries found or when we
+          ;; just finished a chunk in the last loop, meaning there is probably
+          ;; more data to process even if there isn't a boundary (since we might
+          ;; have all the headers for the next field)
           (loop while (or (search boundary data)
                           just-finished-chunk)
                 for data-length = (length data) do
@@ -65,10 +77,11 @@
                        (zerop (search boundary data)))
               (setf data (subseq data (+ 2 boundary-length))))
 
+            ;; reset the "just finished!" var
             (setf just-finished-chunk nil)
 
-            ;; act differently depending on whether we're parsing a new part or an
-            ;; existing
+            ;; act differently depending on whether we're parsing a new field or
+            ;; an existing
             (if current-field-headers
                 ;; we are inside of an existing chunk.
                 (let* ((body-end (- (or (search boundary data) 2) 2))
@@ -89,6 +102,8 @@
                             current-field-kv kv
                             current-field-name field-name)
                       (send-data-to-callback body-start body-end body-complete-p)))))
+            ;; if the data hasn't changed in the last loop, it means that
+            ;; nothing was parsed and we need more data (ie, return)
             (when (= (length data) data-length)
               (return-from leave-parser))))))))
 
