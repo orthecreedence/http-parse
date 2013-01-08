@@ -113,7 +113,8 @@ Date: May 7, 2028"
                                 :store-body t
                                 :header-callback (lambda (h)
                                                    (setf parsed-headers h))
-                                :body-callback (lambda (data)
+                                :body-callback (lambda (data finishedp)
+                                                 (declare (ignore finishedp))
                                                  (push data body-chunks)))))
       (multiple-value-bind (http-ret headers-complete body-complete)
           (funcall parser chunk1)
@@ -148,7 +149,8 @@ Date: May 7, 2028"
 (test parse-http-response
   "Test parsing an HTTP response"
   (let ((parsed-headers nil)
-        (body-chunks nil))
+        (body-chunks nil)
+        (finished 0))
     (let* ((request-str *http-response2*)
            (request-bytes (to-bytes request-str))
            (chunk1-end (1+ (search #(10 66 13) request-bytes)))
@@ -161,8 +163,10 @@ Date: May 7, 2028"
                                 :store-body t
                                 :header-callback (lambda (h)
                                                    (setf parsed-headers h))
-                                :body-callback (lambda (data)
-                                                 (push data body-chunks)))))
+                                :body-callback (lambda (data finishedp)
+                                                 (declare (ignore finishedp))
+                                                 (push data body-chunks))
+                                :finish-callback (lambda () (incf finished)))))
       (multiple-value-bind (http-ret headers-complete body-complete)
           (funcall parser chunk1)
         (is (eql http http-ret) "chunk1 http: ~a != ~a" http-ret http)
@@ -191,7 +195,8 @@ Date: May 7, 2028"
                   :cache-control "public; max-age=69")))
     (is (equalp body-chunks
                 (list (to-bytes "age:3,likes:[acting sheepish,running,peeing,barking]}")
-                      (to-bytes "{name:lucy,"))))))
+                      (to-bytes "{name:lucy,"))))
+    (is (= finished 1))))
 
 (test real-response
   "Test parsing of an honest to god (not made up) HTTP response"

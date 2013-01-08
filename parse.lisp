@@ -152,7 +152,7 @@
              (return))))))
     (values chunk-data chunk-start completep)))
 
-(defun make-parser (http &key header-callback body-callback multipart-callback store-body)
+(defun make-parser (http &key header-callback body-callback multipart-callback finish-callback store-body)
   "Return a closure that parses an HTTP request/response by calling it with
    the bytes received as its only argument. The closure returns three values:
    the http object passed in, a boolean representing whether the headers have
@@ -164,7 +164,12 @@
    with all the headers as a plist once they are fully parsed, and the
    `body-callback` with the body once either it finishes parsing (if we have
    Content-Length) or once for each set of completed chunks sent, which allows
-   streaming the body as it comes in.
+   streaming the body as it comes in. If a multipart callback is given, it will
+   be called at least once for each form field present in the multipart form
+   data.
+
+   The `:finish-callback` will be called when the HTTP payload is fully
+   processed.
    
    The :store-body keyword indicates to the parser that we wish to keep the
    body (in its entirety) in the http object passed in (accessible via the
@@ -188,6 +193,8 @@
         (when (eql data :eof)
           (when store-body
             (setf (http-body http) body-bytes))
+          (when finish-callback
+            (funcall finish-callback))
           (return-from parse-wrap
                        (values http t t)))
 
@@ -224,6 +231,8 @@
                     ;; no content-length or chunking? assume no body.
                     ;; TODO: is this correct for HTTP 1.0??
                     (t
+                     (when finish-callback
+                       (funcall finish-callback))
                      (return-from parse-wrap (values http t t)))))
                 (return-from parse-wrap (values http nil nil)))))
 
@@ -235,9 +244,11 @@
               (when (< 0 (length chunk-data))
                 (setf http-bytes (subseq http-bytes next-chunk-start))
                 (when body-callback
-                  (funcall body-callback chunk-data))
+                  (funcall body-callback chunk-data completep))
                 (when multipart-parser
                   (funcall multipart-parser chunk-data))
+                (when (and completep finish-callback)
+                  (funcall finish-callback))
                 (when store-body
                   (setf body-bytes (append-array body-bytes chunk-data)
                         (http-body http) body-bytes)))
@@ -253,9 +264,11 @@
                   (when store-body
                     (setf (http-body http) body))
                   (when body-callback
-                    (funcall body-callback body))
+                    (funcall body-callback body t))
                   (when multipart-parser
                     (funcall multipart-parser body))
+                  (when finish-callback
+                    (funcall finish-callback))
                   (return-from parse-wrap
                                (values http t t))))))
           (t
