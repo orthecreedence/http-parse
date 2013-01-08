@@ -51,6 +51,7 @@
   "Given the bytes of an HTTP request/response, pull out only the headers and
    optionally the line above the start of the headers. Returns the headers as a
    string."
+  ;; search for the telltale \r\n\r\n that marks the end of the headers
   (let* ((header-break (search #(13 10 13 10) bytes))
          (header-block (subseq bytes 0 header-break)))
     (unless header-break
@@ -186,7 +187,8 @@
         (content-length nil)
         (chunked nil)
         (multipart-parser nil)  ; we'll init this after we get headers
-        (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10))))
+        (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10)))
+        (100-continue-search (babel:string-to-octets "100 Continue")))
     (lambda (data)
       (block parse-wrap
         ;; detect data EOF
@@ -200,6 +202,13 @@
 
         ;; store the new data
         (setf http-bytes (append-array http-bytes data))
+
+        ;; eliminate "100 Continue" blocks
+        (let* ((continue-position (search 100-continue-search http-bytes :from-end t)))
+          (when continue-position
+            (setf http-bytes (subseq http-bytes
+                                     (find-non-whitespace-pos http-bytes :start (+ continue-position
+                                                                                   (length 100-continue-search)))))))
 
         ;; grab/parse the headers. if headers aren't fully present, we return
         ;; without trying to parse the body
