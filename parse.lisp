@@ -241,7 +241,7 @@
           (chunked
             (multiple-value-bind (chunk-data next-chunk-start completep)
                 (get-complete-chunks http-bytes)
-              (when (< 0 (length chunk-data))
+              (when (or completep (< 0 (length chunk-data)))
                 (setf http-bytes (subseq http-bytes next-chunk-start))
                 (when body-callback
                   (funcall body-callback chunk-data completep))
