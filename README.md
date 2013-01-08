@@ -56,7 +56,7 @@ etc.
 
 ### make-parser (function)
 ```common-lisp
-(defun make-parser (http &key header-callback body-callback multipart-callback store-body)
+(defun make-parser (http &key header-callback body-callback multipart-callback finish-callback store-body)
   => lambda
 ```
 
@@ -77,8 +77,8 @@ The parser closure returns three values: the [http](#http) object passed in, a
 boolean indicating if the headers are finished parsing, and a boolean indicating
 if the HTTP body has been fully parsed.
 
-`make-parser` accepts three callbacks, `:header-callback`, `:body-callback`, and
-`:multipart-callback`:
+`make-parser` accepts these callbacks: `:header-callback`, `:body-callback`, 
+`:multipart-callback`, and `:finish-callback`.
 
 - The [header callback](#header-callback-definition) is fired when all the
 headers have been parsed. It takes one argument, a plist of finished headers.
@@ -93,6 +93,9 @@ into multiple chunks, it will fire the callback for each of the chunks,
 indicating in one of the arguments whether that is the final chunk or not. This
 makes it possible to stream the multipart data as it comes in (for instance, to
 a file).
+- The [finish-callback](#finish-callback-definition) is a function with no args
+called when the parser has detected that the HTTP payload is completely parsed
+(headers, body, etc).
 
 The `:store-body` keyword specifies that the parser should store the body (as a
 byte array) into the given [http](#http) object as it is parsed. Otherwise, the
@@ -134,13 +137,17 @@ HTTP payload.
 
 ##### body-callback definition
 ```common-lisp
-(lambda (byte-array) ...)
+(lambda (byte-array last-chunk-p) ...)
 ```
 
 Byte-array is __not__ cumulative, it is just the *new* data that has been parsed
 from the payload. If multiple chunks are parsed at once, their body data is sent
 in as one call to the `body-callback`. Incomplete chunks are *not* sent in until
 they are completed.
+
+`last-chunk-p` is true if the entire body has been processed (if a `Content-Length`
+was specified and all bytes accounted for, or if the body is chunked and the 
+0-byte chunk has been encountered).
 
 ##### multipart-callback definition
 ```common-lisp
@@ -162,6 +169,13 @@ data for that field.
 Generally, this callback will be a closure that is able to track the current
 field it's operating on and be able to handle the case where `body-bytes` is
 spread over multiple calls if `body-complete-p` is `nil`.
+
+##### finish-callback definition
+```common-lisp
+(lambda () ...)
+```
+This callback is fired when the HTTP parser is finished parsing the
+request/response.
 
 Tests
 -----
