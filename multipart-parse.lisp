@@ -33,6 +33,10 @@
          (current-field-headers nil)
          (current-field-kv nil)
          (current-field-name nil))
+    ;; make sure we're actually parsing multipart data
+    (unless (string= (subseq (getf headers :content-type) 0 20)
+                     "multipart/form-data;")
+      (return-from make-multipart-parser nil))
     (lambda (chunk-data)
       (setf data (append-array data chunk-data))
       (block leave-parser
