@@ -63,7 +63,7 @@ etc.
 ### make-parser (function)
 ```common-lisp
 (defun make-parser (http &key header-callback body-callback multipart-callback finish-callback store-body)
-  => lambda
+  => closure
 ```
 
 This is what you've all been waiting for, folks. This function initializes an
@@ -182,6 +182,23 @@ spread over multiple calls if `body-complete-p` is `nil`.
 ```
 This callback is fired when the HTTP parser is finished parsing the
 request/response.
+
+### make-multipart-parser (function)
+```common-lisp
+(defun make-multipart-parser (headers callback))
+  => closure
+```
+Returns a parser closure to deal with multipart form data. Data is fed to the
+parser in as many chunks as needed (or all at once) and the given `callback`
+will be fired at least once for each form field present in the multipart form
+data. If data for a field is spread over multiple chunks, the callback is fired
+for each of the chunks, along with a second argument indicating whether the
+current chunk is that last for that field.
+
+`headers` are all the headers from a parsed HTTP payload, in plist form.
+
+##### callback definition
+See [multipart-callback definition](#multipart-callback-definition).
 
 Tests
 -----
