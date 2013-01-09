@@ -3,6 +3,7 @@
 (defclass http ()
   ((version :accessor http-version :initarg :version :initform 1)
    (headers :accessor http-headers :initarg :headers :initform nil)
+   (store-body :accessor http-store-body :initarg :store-body :initform nil)
    (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8))))
   (:documentation "Base HTTP class, holds data common to both requests and responses."))
    
@@ -180,6 +181,7 @@
    Parsing can be forced to completion by passing :EOF into the data arg. It
    is recommended to do this if the client/server closes the connection before
    you do."
+  (setf (http-store-body http) store-body)
   ;; create the main closure
   (let ((http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
         (body-bytes (make-array 0 :element-type '(unsigned-byte 8)))
@@ -193,7 +195,7 @@
       (block parse-wrap
         ;; detect data EOF
         (when (eql data :eof)
-          (when store-body
+          (when (http-store-body http)
             (setf (http-body http) body-bytes))
           (when finish-callback
             (funcall finish-callback))
@@ -258,7 +260,7 @@
                   (funcall multipart-parser chunk-data))
                 (when (and completep finish-callback)
                   (funcall finish-callback))
-                (when store-body
+                (when (http-store-body http)
                   (setf body-bytes (append-array body-bytes chunk-data)
                         (http-body http) body-bytes)))
               (return-from parse-wrap (values http t completep))))
@@ -270,7 +272,7 @@
                 (let ((body (if (= body-length content-length)
                                 http-bytes
                                 (subseq http-bytes 0 (+ 0 content-length)))))
-                  (when store-body
+                  (when (http-store-body http)
                     (setf (http-body http) body))
                   (when body-callback
                     (funcall body-callback body t))

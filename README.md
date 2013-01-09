@@ -26,6 +26,12 @@ Accessor for the parsed HTTP version out of the http object.
 ##### http-headers
 Accessor for the headers parsed from the HTTP request/response
 
+##### http-store-body
+`store-body` specifies whether the HTTP body should be stored (in its entirety)
+in the [http-body](#http-body) accessor. If this is set after initializing a
+parser, it should be done so no later than the [header-callback](#header-callback-definition)
+being fired, or else pieces of the body may be missing.
+
 ##### http-body
 Accessor for the full HTTP body from the request/response (although storing of the
 body in the `http` object must be explicitely asked for by passing `:store-body t`

@@ -3,6 +3,7 @@
   (:export #:http
            #:http-version
            #:http-headers
+           #:http-store-body
            #:http-body
            #:http-header-callback
            #:http-body-callback
