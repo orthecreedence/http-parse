@@ -34,8 +34,7 @@
          (current-field-kv nil)
          (current-field-name nil))
     ;; make sure we're actually parsing multipart data
-    (unless (string= (subseq (getf headers :content-type) 0 20)
-                     "multipart/form-data;")
+    (unless (search "multipart/form-data;" (getf headers :content-type))
       (return-from make-multipart-parser nil))
     (lambda (chunk-data)
       ;; continuously append new data to our data array
