@@ -156,25 +156,7 @@ was specified and all bytes accounted for, or if the body is chunked and the
 0-byte chunk has been encountered).
 
 ##### multipart-callback definition
-```common-lisp
-(lambda (field-name field-headers field-meta body-bytes body-complete-p) ...)
-```
-
-This callback is fired for each form field encountered in a multipart request.
-
-The `field-name` arg is a string indicating the name of the form field. The
-`field-headers` arg is a plist containing the headers for that field (generally
-this is `Content-Disposition` and sometimes `Content-Type` for uploads). The
-`field-meta` arg is a plist of key/value pairs found in the `Content-Disposition`
-header for the field (this is where the `field-name` arg comes from, and is also
-used to specify the filename of uploaded files). `body-bytes` is a byte array
-containing all or a chunk of that field's data, and `body-complete-p` indicates
-whether or not the `body-bytes` being sent into the callback is the last bit of
-data for that field.
-
-Generally, this callback will be a closure that is able to track the current
-field it's operating on and be able to handle the case where `body-bytes` is
-spread over multiple calls if `body-complete-p` is `nil`.
+See [multipart parser callback definition](#multipart-parser-callback-definition).
 
 ##### finish-callback definition
 ```common-lisp
@@ -197,8 +179,30 @@ current chunk is that last for that field.
 
 `headers` are all the headers from a parsed HTTP payload, in plist form.
 
-##### callback definition
-See [multipart-callback definition](#multipart-callback-definition).
+NOTE: If `make-multipart-parser` detects that the data being decoded is *not* in
+multipart format (determined by reading the headers), it returns `nil` instead
+of a closure.
+
+##### multipart parser callback definition
+```common-lisp
+(lambda (field-name field-headers field-meta body-bytes body-complete-p) ...)
+```
+
+This callback is fired for each form field encountered in a multipart request.
+
+The `field-name` arg is a string indicating the name of the form field. The
+`field-headers` arg is a plist containing the headers for that field (generally
+this is `Content-Disposition` and sometimes `Content-Type` for uploads). The
+`field-meta` arg is a plist of key/value pairs found in the `Content-Disposition`
+header for the field (this is where the `field-name` arg comes from, and is also
+used to specify the filename of uploaded files). `body-bytes` is a byte array
+containing all or a chunk of that field's data, and `body-complete-p` indicates
+whether or not the `body-bytes` being sent into the callback is the last bit of
+data for that field.
+
+Generally, this callback will be a closure that is able to track the current
+field it's operating on and be able to handle the case where `body-bytes` is
+spread over multiple calls if `body-complete-p` is `nil`.
 
 Tests
 -----
