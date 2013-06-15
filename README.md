@@ -38,7 +38,7 @@ body in the `http` object must be explicitely asked for by passing `:store-body 
 into [make-parser](#make-parser).
 
 ### http-request (class)
-_extends [http](#http)_
+_extends [http](#http-class)_
 
 Holds values specific to an HTTP request (method, resource)
 
@@ -49,7 +49,7 @@ Accessor for the parsed HTTP request method as a keyword: `:GET`, `:POST`, etc.
 Accessor for the resource in the request. Parse with [puri](http://www.cliki.net/puri).
 
 ### http-response (class)
-_extends [http](#http)_
+_extends [http](#http-class)_
 
 Holds values specific to an HTTP response (status, status text).
 
