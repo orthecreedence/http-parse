@@ -280,8 +280,10 @@
                     (funcall multipart-parser body))
                   (when finish-callback
                     (funcall finish-callback))
-                  (return-from parse-wrap
-                               (values http t t))))))
+                  (return-from parse-wrap (values http t t))))))
           (t
-           (error "Got neither Content-Length nor chunked transfer.")))))))
+            ;; no content length, no chunking, I smell a request with no body
+            (when finish-callback
+              (funcall finish-callback))
+            (return-from parse-wrap (values http t t))))))))
 
