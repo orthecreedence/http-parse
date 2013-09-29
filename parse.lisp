@@ -57,7 +57,7 @@
          (header-block (subseq bytes 0 header-break)))
     (unless header-break
       (return-from get-header-block))
-    (let* ((str (babel:octets-to-string header-block))
+    (let* ((str (babel:octets-to-string header-block :encoding :iso-8859-1))
            (header-start (cl-ppcre:scan *scanner-find-first-header* str)))
       (when header-start
         (if get-previous-line
