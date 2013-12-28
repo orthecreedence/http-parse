@@ -45,7 +45,7 @@
   (cl-ppcre:create-scanner "^[0-9\.]+$")
   "Create a regex scanner that detects if a string can be converted to a numver.")
 (defparameter *scanner-find-first-header*
-  (cl-ppcre:create-scanner "^*[a-z-]+: .*" :case-insensitive-mode t :multi-line-mode t)
+  (cl-ppcre:create-scanner "^*[0-9a-z-]+: .*" :case-insensitive-mode t :multi-line-mode t)
   "Create a scanner to find the first header in a string.")
 
 (defun get-header-block (bytes &key get-previous-line)

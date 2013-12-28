@@ -45,6 +45,29 @@ likes:[acting sheepish,running,peeing,barking]}~c~c~
           #\return #\newline
           #\return #\newline))
 
+(defparameter *http-response3*
+  (format nil "~
+HTTP/1.1 200 OK~c~c~
+x-amz-id-2: 0kZfRJJkWSF7zj/eB94TOInNFIByGmN2Y0SDA5iJvWkICqREJ+MnocUtzukeSKKy~c~c~
+x-amz-request-id: 5065F842E041E3CB~c~c~
+Date: Sat, 28 Dec 2013 03:48:33 GMT~c~c~
+Transfer-Encoding: chunked~c~c~
+Server: AmazonS3~c~c~
+~c~c~
+171~c~c~
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>~c~c~
+<InitiateMultipartUploadResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Bucket>dev.turtl.it</Bucket><Key>files/52ab8473735ca40d5c000004</Key><UploadId>R3CjDEtAcsd4Vo5J1FoIAtxDWM4A4brHdgO8HtefBt1VmC3UFxr.wHibQ2iFD_Jiinl0QWaij.ht1bC4PzHuH4csv3O9a2wC4Kzt6aPNdf55pwKFImGy10mM8FGIZ6zD</UploadId></InitiateMultipartUploadResult>"
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline
+          #\return #\newline))
+
 (defparameter *http-request1*
   (format nil "~
 POST /users/dead HTTP/1.1~c~c~
@@ -83,6 +106,12 @@ likes:[cussin,bitin,stealin,fightin]}~c~c~
     (is (string= (http-parse::get-header-block bytes)
                  (format nil "Content-Type: text/plain~c~cContent-Length: 13"
                          #\return #\newline)))))
+
+(test parse-headers
+  "Test some pesky Amazon responses."
+  (let* ((http-bytes (to-bytes *http-response3*))
+         (http (make-instance 'http-response)))
+    (http-parse::parse-headers http http-bytes)))
 
 (test convert-headers-plist
   "Test converting headers to a plist"
