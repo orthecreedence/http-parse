@@ -1,7 +1,7 @@
 (asdf:defsystem http-parse
   :author "Andrew Danger Lyon <orthecreedence@gmail.com>"
   :license "MIT"
-  :version "0.1.8"
+  :version "0.1.9"
   :description "A library for parsing HTTP requests/responses (synchronous or asynchronous)."
   :depends-on (#:babel #:cl-ppcre)
   :components
