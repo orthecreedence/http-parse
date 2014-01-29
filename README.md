@@ -32,6 +32,16 @@ in the [http-body](#http-body) accessor. If this is set after initializing a
 parser, it should be done so no later than the [header-callback](#header-callback-definition)
 being fired, or else pieces of the body may be missing.
 
+##### http-force-stream
+`force-stream` lets the parser know that you want every TCP packet that comes in
+to be passed into a body callback *as if it was sent via an HTTP chunk*. This is
+an advanced option, but can be very useful in some cases. For instance, if you
+have a server that supports file uploads and a client doesn't know how to chunk
+an upload (like every browser ever), your server is going to spin its CPU
+and waste memory buffering the entire file and passing it around as a huge array
+instead of dealing with it packet by packet. This is a great way to fake HTTP
+chunking in your server/client.
+
 ##### http-body
 Accessor for the full HTTP body from the request/response (although storing of the
 body in the `http` object must be explicitely asked for by passing `:store-body t`

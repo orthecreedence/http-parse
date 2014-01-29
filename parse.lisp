@@ -4,6 +4,7 @@
   ((version :accessor http-version :initarg :version :initform 1)
    (headers :accessor http-headers :initarg :headers :initform nil)
    (store-body :accessor http-store-body :initarg :store-body :initform nil)
+   (force-stream :accessor http-force-stream :initarg :force-stream :initform nil)
    (body :accessor http-body :initarg :body :initform (make-array 0 :element-type '(unsigned-byte 8))))
   (:documentation "Base HTTP class, holds data common to both requests and responses."))
    
@@ -188,6 +189,7 @@
         (have-headers nil)
         (content-length nil)
         (chunked nil)
+        (forced-chunk-bytes 0)
         (multipart-parser nil)  ; we'll init this after we get headers
         (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10)))
         (100-continue-search (babel:string-to-octets "100 Continue")))
@@ -267,20 +269,37 @@
           (content-length
             (let* ((body (subseq http-bytes 0 (length http-bytes)))
                    (body-length (length body)))
-              ;; don't "stream" data until we have the full body.
-              (when (<= content-length body-length)
-                (let ((body (if (= body-length content-length)
-                                http-bytes
-                                (subseq http-bytes 0 (+ 0 content-length)))))
-                  (when (http-store-body http)
-                    (setf (http-body http) body))
-                  (when body-callback
-                    (funcall body-callback body t))
-                  (when multipart-parser
-                    (funcall multipart-parser body))
-                  (when finish-callback
-                    (funcall finish-callback))
-                  (return-from parse-wrap (values http t t))))))
+              (if (http-force-stream http)
+                  ;; we're forcing streaming into the callback even though we're
+                  ;; not chunking. this can be useful for dealing with large
+                  ;; amounts of data that a stupid client, which is stupid,
+                  ;; sends as one big request instead of chunking it. this is
+                  ;; specifically in regards to XHR in browsers, which doesn't
+                  ;; support HTTP chunked uploads. brilliant.
+                  (progn
+                    (incf forced-chunk-bytes (length http-bytes))
+                    (let ((finishedp (<= content-length forced-chunk-bytes)))
+                      (when body-callback
+                        (funcall body-callback http-bytes finishedp))
+                      (when multipart-parser
+                        (funcall multipart-parser http-bytes))
+                      (setf http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
+                      (when finishedp
+                        (funcall finish-callback))))
+                  ;; don't "stream" data until we have the full body.
+                  (when (<= content-length body-length)
+                    (let ((body (if (= body-length content-length)
+                                    http-bytes
+                                    (subseq http-bytes 0 (+ 0 content-length)))))
+                      (when (http-store-body http)
+                        (setf (http-body http) body))
+                      (when body-callback
+                        (funcall body-callback body t))
+                      (when multipart-parser
+                        (funcall multipart-parser body))
+                      (when finish-callback
+                        (funcall finish-callback))
+                      (return-from parse-wrap (values http t t)))))))
           (t
             ;; no content length, no chunking, I smell a request with no body
             (when finish-callback

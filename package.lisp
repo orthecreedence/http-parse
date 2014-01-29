@@ -4,6 +4,7 @@
            #:http-version
            #:http-headers
            #:http-store-body
+           #:http-force-stream
            #:http-body
            #:http-header-callback
            #:http-body-callback
