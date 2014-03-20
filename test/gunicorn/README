@@ -1,0 +1,5 @@
+These tests were take directly from the gunicorn project: https://github.com/benoitc/gunicorn.
+
+We piggy back off their hard work here to make the http-parse library more
+reliable. Thanks for using MIT, gunicorn authors!
+

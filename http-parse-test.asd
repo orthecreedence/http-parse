@@ -6,9 +6,11 @@
   :depends-on (#:http-parse #:babel #:eos)
   :components
   ((:module test
-    :serial t
-    :components ((:file "util")
-                 (:file "parse")
-				 (:file "multipart")
-				 (:file "run")))))
+   :serial t
+   :components
+   ((:file "util")
+    (:file "parse")
+    (:file "multipart")
+    (:file "gunicorn")
+    (:file "run")))))
 
