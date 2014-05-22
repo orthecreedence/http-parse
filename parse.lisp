@@ -70,12 +70,12 @@
 (defun convert-headers-plist (header-str)
   "Pull out headers in a plist from a string."
   (loop for line in (cl-ppcre:split *scanner-header-parse-line* header-str)
-        append (let* ((kv (cl-ppcre:split *scanner-header-parse-kv* line))
+        append (let* ((kv (cl-ppcre:split *scanner-header-parse-kv* line :limit 2))
                       (numberp (cl-ppcre:scan *scanner-numeric* (cadr kv)))
                       (val (if numberp
                                (read-from-string (cadr kv))
                                (cadr kv))))
-                 (list (intern (string-upcase (car kv)) :keyword)
+                 (list (intern (string-upcase (string-trim #(#\space #\return #\newline) (car kv))) :keyword)
                        val))))
 
 (defgeneric parse-headers (http bytes)
