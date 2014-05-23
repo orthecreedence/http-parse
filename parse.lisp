@@ -40,10 +40,10 @@
   (cl-ppcre:create-scanner "\\r\\n" :multi-line-mode t)
   "Create a regex scanner for splitting header lines up.")
 (defparameter *scanner-header-parse-kv*
-  (cl-ppcre:create-scanner ":[ \s]+" :multi-line-mode t)
+  (cl-ppcre:create-scanner ":[ \\s]+" :multi-line-mode t)
   "Create a regex scanner for splitting header kv pairs up.")
 (defparameter *scanner-numeric*
-  (cl-ppcre:create-scanner "^[0-9\.]+$")
+  (cl-ppcre:create-scanner "^[0-9\\.]+$")
   "Create a regex scanner that detects if a string can be converted to a numver.")
 (defparameter *scanner-find-first-header*
   (cl-ppcre:create-scanner "^*[0-9a-z-]+: .*" :case-insensitive-mode t :multi-line-mode t)
