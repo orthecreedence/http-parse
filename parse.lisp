@@ -260,11 +260,11 @@
                   (funcall body-callback chunk-data completep))
                 (when multipart-parser
                   (funcall multipart-parser chunk-data))
-                (when (and completep finish-callback)
-                  (funcall finish-callback))
                 (when (http-store-body http)
                   (setf body-bytes (append-array body-bytes chunk-data)
-                        (http-body http) body-bytes)))
+                        (http-body http) body-bytes))
+                (when (and completep finish-callback)
+                  (funcall finish-callback)))
               (return-from parse-wrap (values http t completep))))
           (content-length
             (let* ((body (subseq http-bytes 0 (length http-bytes)))
