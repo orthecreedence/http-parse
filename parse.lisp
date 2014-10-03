@@ -73,7 +73,10 @@
         append (let* ((kv (cl-ppcre:split *scanner-header-parse-kv* line :limit 2))
                       (numberp (cl-ppcre:scan *scanner-numeric* (cadr kv)))
                       (val (if numberp
-                               (read-from-string (cadr kv))
+                               (let ((read-val (read-from-string (cadr kv))))
+                                 (if (numberp read-val)
+                                     read-val
+                                     (cadr kv)))
                                (cadr kv))))
                  (list (intern (string-upcase (string-trim #(#\space #\return #\newline) (car kv))) :keyword)
                        val))))
