@@ -56,9 +56,8 @@
                              (length previous))))
       (when header-start
         (if get-previous-line
-            (let* ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0))
-                   (str-w-prev-line (subseq str previous-line-pos)))
-              (subseq str-w-prev-line (find-non-whitespace-pos str-w-prev-line)))
+            (let ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0)))
+              (subseq str (find-non-whitespace-pos str :start previous-line-pos)))
             (subseq str header-start))))))
 
 (defun convert-headers-plist (header-str)
