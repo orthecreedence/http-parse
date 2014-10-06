@@ -3,7 +3,7 @@
   :license "MIT"
   :version "0.1.10"
   :description "A library for parsing HTTP requests/responses (synchronous or asynchronous)."
-  :depends-on (#:babel #:cl-ppcre)
+  :depends-on (#:babel #:cl-irregsexp)
   :components
   ((:file "package")
    (:file "util" :depends-on ("package"))

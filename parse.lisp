@@ -36,19 +36,6 @@
           (format nil "~a ~a" (http-status http) (http-status-text http))
           (http-headers http)))
 
-(defparameter *scanner-header-parse-line*
-  (cl-ppcre:create-scanner "\\r\\n" :multi-line-mode t)
-  "Create a regex scanner for splitting header lines up.")
-(defparameter *scanner-header-parse-kv*
-  (cl-ppcre:create-scanner ":[ \\s]+" :multi-line-mode t)
-  "Create a regex scanner for splitting header kv pairs up.")
-(defparameter *scanner-numeric*
-  (cl-ppcre:create-scanner "^[0-9\\.]+$")
-  "Create a regex scanner that detects if a string can be converted to a numver.")
-(defparameter *scanner-find-first-header*
-  (cl-ppcre:create-scanner "^*[0-9a-z-]+: .*" :case-insensitive-mode t :multi-line-mode t)
-  "Create a scanner to find the first header in a string.")
-
 (defun get-header-block (bytes &key get-previous-line)
   "Given the bytes of an HTTP request/response, pull out only the headers and
    optionally the line above the start of the headers. Returns the headers as a
@@ -59,24 +46,28 @@
     (unless header-break
       (return-from get-header-block))
     (let* ((str (babel:octets-to-string header-block :encoding :iso-8859-1))
-           (header-start (cl-ppcre:scan *scanner-find-first-header* str)))
+           (header-start (cl-irregsexp:if-match-bind
+                             ((previous (* (progn (* (or #\Space (- #\A #\z) (- #\0 #\9) #\/ #\.)) #\Return #\Newline)))
+                              (name (+ (or (- #\A #\z)
+                                           (- #\0 #\9)
+                                           (= #\-))))
+                              #\: (space) val)
+                             str
+                             (length previous))))
       (when header-start
         (if get-previous-line
-            (let* ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0))
-                   (str-w-prev-line (subseq str previous-line-pos)))
-              (subseq str-w-prev-line (find-non-whitespace-pos str-w-prev-line)))
+            (let ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0)))
+              (subseq str (find-non-whitespace-pos str :start previous-line-pos)))
             (subseq str header-start))))))
 
 (defun convert-headers-plist (header-str)
   "Pull out headers in a plist from a string."
-  (loop for line in (cl-ppcre:split *scanner-header-parse-line* header-str)
-        append (let* ((kv (cl-ppcre:split *scanner-header-parse-kv* line :limit 2))
-                      (numberp (cl-ppcre:scan *scanner-numeric* (cadr kv)))
-                      (val (if numberp
-                               (read-from-string (cadr kv))
-                               (cadr kv))))
-                 (list (intern (string-upcase (string-trim #(#\space #\return #\newline) (car kv))) :keyword)
-                       val))))
+  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) header-str)
+        append (cl-irregsexp:if-match-bind
+                   (key ":" (* (space)) val)
+                   line
+                   (list (intern (string-upcase key) :keyword)
+                         (cl-irregsexp:if-match-bind ((num (float)) (last)) val num val)))))
 
 (defgeneric parse-headers (http bytes)
   (:documentation
@@ -87,19 +78,15 @@
 (defmethod parse-headers ((http http-request) (bytes vector))
   (let ((header-str (get-header-block bytes :get-previous-line t)))
     (when header-str
-      (let* ((top-line-end (search #(#\return #\newline) header-str))
-             (top-line (subseq header-str 0 top-line-end))
-             (header-str (subseq header-str (+ top-line-end 2)))
-             (resource-start (search " " top-line))
-             (version-start (search "HTTP/" top-line :start2 (1+ resource-start))))
-        (setf (http-headers http) (convert-headers-plist header-str))
-        (setf (http-method http) (intern (subseq top-line 0 resource-start) :keyword))
-        (if version-start
-            (let* ((version-str (subseq top-line version-start))
-                   (version (read-from-string (subseq version-str (1+ (search "/" version-str))))))
-              (setf (http-resource http) (subseq top-line (1+ resource-start) (1- version-start)))
-              (setf (http-version http) version))
-            (setf (http-resource http) (subseq top-line (1+ resource-start))))
+      (cl-irregsexp:match-bind
+          (method (space) resource (or (progn (space) "HTTP/" version #\Return #\Newline)
+                                       (progn #\Return #\Newline))
+                  headers)
+          header-str
+        (setf (http-headers http) (convert-headers-plist headers))
+        (setf (http-method http) (intern method :keyword))
+        (setf (http-resource http) resource)
+        (setf (http-version http) (read-from-string version))
         (values (http-headers http) http)))))
 
 (defmethod parse-headers ((http http-response) (bytes vector))
