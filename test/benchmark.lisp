@@ -1,8 +1,6 @@
 (in-package :http-parse-test)
 
 ;; ---- profile-list ----
-;; cl-ppcre::split
-;; cl-ppcre::scan
 ;; http-parse::get-header-block
 ;; http-parse::convert-headers-plist
 ;; http-parse::parse-headers
