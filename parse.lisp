@@ -44,20 +44,21 @@
   (let ((header-break (search #(13 10 13 10) bytes)))
     (unless header-break
       (return-from get-header-block))
-    (let* ((header-block (subseq bytes 0 header-break))
-           (header-start (cl-irregsexp:if-match-bind
-                             ((previous (* (progn (* (or #\Space (- #\A #\z) (- #\0 #\9) #\/ #\.)) #\Return #\Newline)))
-                              (name (+ (or (- #\A #\z)
-                                           (- #\0 #\9)
-                                           (= #\-))))
-                              #\: (space) val)
-                             header-block
-                             (length previous))))
-      (when header-start
+    (let ((header-start (cl-irregsexp:if-match-bind
+                            ((previous (* (progn (* (or #\Space (- #\A #\z) (- #\0 #\9) #\/ #\.)) #\Return #\Newline)))
+                             (name (+ (or (- #\A #\z)
+                                          (- #\0 #\9)
+                                          (= #\-))))
+                             #\: (space) val)
+                            bytes
+                            (length previous))))
+      (when (and header-start
+                 (< header-start header-break))
         (if get-previous-line
-            (let ((previous-line-pos (or (search #(13 10) header-block :end2 (- header-start 2) :from-end t) 0)))
-              (subseq header-block (find-non-whitespace-pos header-block :start previous-line-pos)))
-            (subseq header-block header-start))))))
+            (let ((previous-line-pos (or (search #(13 10) bytes :end2 (- header-start 2) :from-end t) 0)))
+              (subseq bytes (find-non-whitespace-pos bytes :start previous-line-pos)
+                      header-break))
+            (subseq bytes header-start header-break))))))
 
 (defun convert-headers-plist (header-str)
   "Pull out headers in a plist from a string."
