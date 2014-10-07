@@ -66,15 +66,41 @@
   "Pull out headers in a plist from a string."
   (declare (type simple-byte-vector headers)
            (optimize (speed 3) (safety 0)))
-  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) headers)
-        append (cl-irregsexp:if-match-bind
-                   (key ":" (* (space)) val)
-                   (the simple-byte-vector line)
-                   (list (intern (ascii-octets-to-upper-string key) :keyword)
-                         (cl-irregsexp:if-match-bind ((num (float)) (last))
-                             val
-                             num
-                             (babel:octets-to-string val))))))
+  (let ((start 0)
+        (point 0)
+        (end 0)
+        (len (length headers))
+        (key)
+        (val))
+    (loop
+       while (and (/= end len)
+                  (or (setf end (position (char-code #\Return) headers :start point))
+                      t))
+       if (or
+           (not end)                    ; end of header
+           (= (aref headers (1+ end)) (char-code #\Newline)))
+       append (progn
+                ;; reuse point
+                (setf end (or end len))
+                (setf point (position (char-code #\:) headers :start start :end end))
+                (if point
+                    (progn 
+                      (setf key (intern (ascii-octets-to-upper-string (subseq headers start point)) :keyword))
+                      ;; reuse point
+                      (setf point (position-if-not (lambda (c) (= (char-code #\Space) c)) headers :start (1+ point) :end end))
+                      (setf val (subseq headers point end))
+                      (setf val (cl-irregsexp:if-match-bind ((num (float)) (last))
+                                                            val
+                                                            num
+                                                            (babel:octets-to-string val)))
+                      (setf start (+ end 2))
+                      (setf point start)
+                      (list key val))
+                    (progn
+                      (setf start (+ end 2))
+                      (setf point start)
+                      nil)))
+       else do (setf point (1+ end)))))
 
 (defgeneric parse-headers (http bytes)
   (:documentation
