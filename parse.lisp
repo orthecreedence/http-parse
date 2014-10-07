@@ -81,6 +81,7 @@
                     (setf end len)))
      do (progn
           (setf point (position #.(char-code #\:) headers :start start :end end))
+          ;; I hope I could eliminate `if` below
           (if point
               (progn
                 (setf tail
