@@ -41,6 +41,8 @@
    optionally the line above the start of the headers. Returns the headers as a
    string."
   ;; search for the telltale \r\n\r\n that marks the end of the headers
+  (declare (type (simple-array (unsigned-byte 8) (*)) bytes)
+           (optimize (speed 3) (safety 0)))
   (let ((header-break (search #(13 10 13 10) bytes)))
     (unless header-break
       (return-from get-header-block))
