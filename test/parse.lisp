@@ -99,11 +99,11 @@ likes:[cussin,bitin,stealin,fightin]}~c~c~
   "Test that getting the entire header block works"
   (let* ((header-str *http-response1*)
          (bytes (to-bytes header-str)))
-    (is (string= (http-parse::get-header-block bytes :get-previous-line t)
+    (is (string= (babel:octets-to-string (http-parse::get-header-block bytes :get-previous-line t))
                  (format nil "HTTP/1.1 200 OK~c~cContent-Type: text/plain~c~cContent-Length: 13"
                          #\return #\newline
                          #\return #\newline)))
-    (is (string= (http-parse::get-header-block bytes)
+    (is (string= (babel:octets-to-string (http-parse::get-header-block bytes))
                  (format nil "Content-Type: text/plain~c~cContent-Length: 13"
                          #\return #\newline)))))
 
@@ -121,7 +121,7 @@ Content-Type: application/json~c~c~
 Date: May 7, 2028"
                             #\return #\newline
                             #\return #\newline)))
-    (is (equalp (http-parse::convert-headers-plist header-str)
+    (is (equalp (http-parse::convert-headers-plist (to-bytes header-str))
                 '(:transfer-encoding "chunked"
                   :content-type "application/json"
                   :date "May 7, 2028")))))

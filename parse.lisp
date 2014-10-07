@@ -41,33 +41,40 @@
    optionally the line above the start of the headers. Returns the headers as a
    string."
   ;; search for the telltale \r\n\r\n that marks the end of the headers
-  (let* ((header-break (search #(13 10 13 10) bytes))
-         (header-block (subseq bytes 0 header-break)))
+  (declare (type simple-byte-vector bytes)
+           (optimize (speed 3) (safety 0)))
+  (let ((header-break (search #(13 10 13 10) bytes)))
     (unless header-break
       (return-from get-header-block))
-    (let* ((str (babel:octets-to-string header-block :encoding :iso-8859-1))
-           (header-start (cl-irregsexp:if-match-bind
-                             ((previous (* (progn (* (or #\Space (- #\A #\z) (- #\0 #\9) #\/ #\.)) #\Return #\Newline)))
-                              (name (+ (or (- #\A #\z)
-                                           (- #\0 #\9)
-                                           (= #\-))))
-                              #\: (space) val)
-                             str
-                             (length previous))))
-      (when header-start
+    (let ((header-start (cl-irregsexp:if-match-bind
+                            ((previous (* (progn (* (or #\Space (- #\A #\z) (- #\0 #\9) #\/ #\.)) #\Return #\Newline)))
+                             (name (+ (or (- #\A #\z)
+                                          (- #\0 #\9)
+                                          (= #\-))))
+                             #\: (space) val)
+                            bytes
+                            (length previous))))
+      (when (and header-start
+                 (< header-start header-break))
         (if get-previous-line
-            (let ((previous-line-pos (or (search #(#\return #\newline) str :end2 (- header-start 2) :from-end t) 0)))
-              (subseq str (find-non-whitespace-pos str :start previous-line-pos)))
-            (subseq str header-start))))))
+            (let ((previous-line-pos (or (search #(13 10) bytes :end2 (- header-start 2) :from-end t) 0)))
+              (subseq bytes (find-non-whitespace-pos bytes :start previous-line-pos)
+                      header-break))
+            (subseq bytes header-start header-break))))))
 
-(defun convert-headers-plist (header-str)
+(defun convert-headers-plist (headers)
   "Pull out headers in a plist from a string."
-  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) header-str)
+  (declare (type simple-byte-vector headers)
+           (optimize (speed 3) (safety 0)))
+  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) headers)
         append (cl-irregsexp:if-match-bind
                    (key ":" (* (space)) val)
-                   line
-                   (list (intern (string-upcase key) :keyword)
-                         (cl-irregsexp:if-match-bind ((num (float)) (last)) val num val)))))
+                   (the simple-byte-vector line)
+                   (list (intern (ascii-octets-to-upper-string key) :keyword)
+                         (cl-irregsexp:if-match-bind ((num (float)) (last))
+                             val
+                             num
+                             (babel:octets-to-string val))))))
 
 (defgeneric parse-headers (http bytes)
   (:documentation
@@ -76,32 +83,38 @@
      Returns the HTTP object passed in."))
 
 (defmethod parse-headers ((http http-request) (bytes vector))
-  (let ((header-str (get-header-block bytes :get-previous-line t)))
-    (when header-str
+  (let ((header-block (get-header-block bytes :get-previous-line t)))
+    (when header-block
       (cl-irregsexp:match-bind
-          (method (space) resource (or (progn (space) "HTTP/" version #\Return #\Newline)
+          (method (space) resource (or (progn (space)
+                                              "HTTP/" (version-major (integer) 1) "." (version-minor (integer))
+                                              #\Return #\Newline)
                                        (progn #\Return #\Newline))
                   headers)
-          header-str
+          header-block
         (setf (http-headers http) (convert-headers-plist headers))
-        (setf (http-method http) (intern method :keyword))
-        (setf (http-resource http) resource)
-        (setf (http-version http) (read-from-string version))
+        (setf (http-method http) (intern (ascii-octets-to-upper-string method) :keyword))
+        (setf (http-resource http) (babel:octets-to-string resource))
+        (setf (http-version http) (case version-minor
+                                    (0 1.0)
+                                    (1 1.1)))
         (values (http-headers http) http)))))
 
 (defmethod parse-headers ((http http-response) (bytes vector))
-  (let ((header-str (get-header-block bytes :get-previous-line t)))
-    (when header-str
-      (let* ((top-line-end (search #(#\return #\newline) header-str))
-             (top-line (subseq header-str 0 top-line-end))
-             (header-str (subseq header-str (+ top-line-end 2)))
-             (status-start (search " " top-line))
-             (status-text-start (search " " top-line :start2 (1+ status-start)))
-             (version-str (subseq top-line 0 status-start)))
-        (setf (http-headers http) (convert-headers-plist header-str))
-        (setf (http-version http) (read-from-string (subseq version-str (1+ (search "/" version-str)))))
-        (setf (http-status http) (read-from-string (subseq top-line (1+ status-start) status-text-start)))
-        (setf (http-status-text http) (subseq top-line (1+ status-text-start)))
+  (let ((header-block (get-header-block bytes :get-previous-line t)))
+    (when header-block
+      (cl-irregsexp:match-bind
+          ("HTTP/" (version-major (integer) 1) "." (version-minor (integer))
+                   (space) (status (integer)) (space) status-text
+                   #\Return #\Newline)
+          header-block
+        (setf (http-headers http) (convert-headers-plist header-block))
+        (setf (http-version http) (case version-minor
+                                    (0 1.0)
+                                    (1 1.1)))
+        (setf (http-status http) status)
+        (setf (http-status-text http)
+              (babel:octets-to-string status-text))
         (values (http-headers http) http)))))
 
 (defun get-complete-chunks (data)
@@ -179,7 +192,7 @@
         (forced-chunk-bytes 0)
         (multipart-parser nil)  ; we'll init this after we get headers
         (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10)))
-        (100-continue-search (babel:string-to-octets "100 Continue")))
+        (100-continue-search #.(babel:string-to-octets "100 Continue")))
     (lambda (data)
       (block parse-wrap
         ;; detect data EOF
