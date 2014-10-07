@@ -43,7 +43,10 @@
   ;; search for the telltale \r\n\r\n that marks the end of the headers
   (declare (type simple-byte-vector bytes)
            (optimize (speed 3) (safety 0)))
-  (let ((header-break (search #(13 10 13 10) bytes)))
+  (let ((header-break (search #.(make-array 4
+                                          :element-type '(unsigned-byte 8)
+                                          :initial-contents '(13 10 13 10))
+                              bytes)))
     (unless header-break
       (return-from get-header-block))
     (let ((header-start (cl-irregsexp:if-match-bind
@@ -57,7 +60,12 @@
       (when (and header-start
                  (< header-start header-break))
         (if get-previous-line
-            (let ((previous-line-pos (or (search #(13 10) bytes :end2 (- header-start 2) :from-end t) 0)))
+            (let ((previous-line-pos (or (search
+                                          (the simple-byte-vector
+                                               #.(make-array 2
+                                                         :element-type '(unsigned-byte 8)
+                                                         :initial-contents '(13 10)))
+                                          bytes :end2 (- header-start 2) :from-end t) 0)))
               (subseq bytes (find-non-whitespace-pos bytes :start previous-line-pos)
                       header-break))
             (subseq bytes header-start header-break))))))
@@ -158,7 +166,7 @@
         (chunk-start 0)
         (data-length (length data))
         (chunk-data (make-array 0 :element-type '(unsigned-byte 8)))
-        (search-line-end  (make-array 2 :element-type '(unsigned-byte 8) :initial-contents #(13 10))))
+        (search-line-end  (the simple-byte-vector #.(make-array 2 :element-type '(unsigned-byte 8) :initial-contents '(13 10)))))
     ;; loop over all available chunks until we get a partial
     (loop while (not (= last-chunk-start chunk-start)) do
       (setf last-chunk-start chunk-start)
@@ -222,7 +230,7 @@
         (chunked nil)
         (forced-chunk-bytes 0)
         (multipart-parser nil)  ; we'll init this after we get headers
-        (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10)))
+        (search-body-start (the simple-byte-vector #.(make-array 4 :element-type '(unsigned-byte 8) :initial-contents '(13 10 13 10))))
         (100-continue-search #.(babel:string-to-octets "100 Continue")))
     (lambda (data)
       (block parse-wrap
