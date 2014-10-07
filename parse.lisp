@@ -62,12 +62,14 @@
                       header-break))
             (subseq bytes header-start header-break))))))
 
-(defun convert-headers-plist (header-str)
+(defun convert-headers-plist (headers)
   "Pull out headers in a plist from a string."
-  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) header-str)
+  (declare (type (simple-array (unsigned-byte 8) (*)) headers)
+           (optimize (speed 3) (safety 0)))
+  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) headers)
         append (cl-irregsexp:if-match-bind
                    (key ":" (* (space)) val)
-                   line
+                   (the (simple-array (unsigned-byte 8) (*)) line)
                    (list (intern (ascii-octets-to-upper-string key) :keyword)
                          (cl-irregsexp:if-match-bind ((num (float)) (last))
                              val
