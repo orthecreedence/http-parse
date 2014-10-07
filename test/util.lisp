@@ -39,9 +39,7 @@
   "Test finding first non-whitespace character in a byte array"
   (let ((seq1 (babel:string-to-octets "hallo"))
         (seq2 (babel:string-to-octets "  omg lol"))
-        (seq3 #(9 56 59)))
+        (seq3 (make-array 3 :element-type '(unsigned-byte 8) :initial-contents #(9 56 59))))
     (is (= (http-parse::find-non-whitespace-pos seq1) 0))
     (is (= (http-parse::find-non-whitespace-pos seq2) 2))
     (is (= (http-parse::find-non-whitespace-pos seq3) 1))))
-        
-
