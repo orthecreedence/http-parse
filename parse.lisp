@@ -190,7 +190,7 @@
         (forced-chunk-bytes 0)
         (multipart-parser nil)  ; we'll init this after we get headers
         (search-body-start (make-array 4 :element-type '(unsigned-byte 8) :initial-contents #(13 10 13 10)))
-        (100-continue-search (babel:string-to-octets "100 Continue")))
+        (100-continue-search #.(babel:string-to-octets "100 Continue")))
     (lambda (data)
       (block parse-wrap
         ;; detect data EOF
