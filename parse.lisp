@@ -41,7 +41,7 @@
    optionally the line above the start of the headers. Returns the headers as a
    string."
   ;; search for the telltale \r\n\r\n that marks the end of the headers
-  (declare (type (simple-array (unsigned-byte 8) (*)) bytes)
+  (declare (type simple-byte-vector bytes)
            (optimize (speed 3) (safety 0)))
   (let ((header-break (search #(13 10 13 10) bytes)))
     (unless header-break
@@ -64,12 +64,12 @@
 
 (defun convert-headers-plist (headers)
   "Pull out headers in a plist from a string."
-  (declare (type (simple-array (unsigned-byte 8) (*)) headers)
+  (declare (type simple-byte-vector headers)
            (optimize (speed 3) (safety 0)))
   (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) headers)
         append (cl-irregsexp:if-match-bind
                    (key ":" (* (space)) val)
-                   (the (simple-array (unsigned-byte 8) (*)) line)
+                   (the simple-byte-vector line)
                    (list (intern (ascii-octets-to-upper-string key) :keyword)
                          (cl-irregsexp:if-match-bind ((num (float)) (last))
                              val

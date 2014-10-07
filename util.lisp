@@ -1,5 +1,8 @@
 (in-package :http-parse)
 
+(deftype simple-byte-vector (&optional (len '*))
+  `(simple-array (unsigned-byte 8) (,len)))
+
 (defun append-array (arr1 arr2)
   "Create an array, made up of arr1 followed by arr2."
   (let ((arr1-length (length arr1))
@@ -12,7 +15,7 @@
 
 (defun find-non-whitespace-pos (seq &key (start 0))
   "Find the position of the first non-whitespace character in an octet sequence."
-  (declare (type (simple-array (unsigned-byte 8) (*)) seq)
+  (declare (type simple-byte-vector seq)
            (optimize (speed 3) (safety 0)))
   (let ((length (length seq)))
     (unless (zerop length)
@@ -35,7 +38,7 @@
       x))
 
 (defun ascii-octets-to-upper-string (octets)
-  (declare (type (simple-array (unsigned-byte 8) (*)) octets)
+  (declare (type simple-byte-vector octets)
            (optimize (speed 3) (safety 0)))
   (let* ((len (length octets))
          (string (make-string len :element-type 'character)))
