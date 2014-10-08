@@ -66,15 +66,46 @@
   "Pull out headers in a plist from a string."
   (declare (type simple-byte-vector headers)
            (optimize (speed 3) (safety 0)))
-  (loop for line in (cl-irregsexp:match-split (progn #\Return #\Newline) headers)
-        append (cl-irregsexp:if-match-bind
-                   (key ":" (* (space)) val)
-                   (the simple-byte-vector line)
-                   (list (intern (ascii-octets-to-upper-string key) :keyword)
-                         (cl-irregsexp:if-match-bind ((num (float)) (last))
-                             val
-                             num
-                             (babel:octets-to-string val))))))
+  (loop
+     with head = (list nil)
+     with tail = head
+     with rn of-type simple-byte-vector = #.(make-array 2 :element-type '(unsigned-byte 8)
+                                                        :initial-contents (list #.(char-code #\Return) #.(char-code #\Newline)))
+     with start = 0
+     with point = 0
+     and end = 0
+     and len = (length headers)
+     and val
+     while (and (/= end len)
+                (or (setf end (search rn headers :start2 point))
+                    (setf end len)))
+     do (progn
+          (setf point (position #.(char-code #\:) headers :start start :end end))
+          ;; I hope I could eliminate `if` below
+          (if point
+              (progn
+                (setf tail
+                      (setf (cdr tail)
+                            (cons (intern (ascii-octets-to-upper-string (subseq headers start point)) :keyword)
+                                  nil)))
+
+                ;; reuse point
+                (setf point (find-non-whitespace-pos headers :start (incf point)))
+                (setf val (subseq headers point end))
+                (setf tail
+                      (setf (cdr tail)
+                            (cons
+                             (cl-irregsexp:if-match-bind ((num (float)) (last))
+                                                         val
+                                                         num
+                                                         (babel:octets-to-string val))
+                             nil)))
+                (setf start (+ end 2))
+                (setf point start))
+              (progn
+                (setf start (+ end 2))
+                (setf point start))))
+     finally (return (cdr head))))
 
 (defgeneric parse-headers (http bytes)
   (:documentation

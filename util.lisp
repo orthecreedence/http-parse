@@ -33,9 +33,7 @@
 (defun byte-to-ascii-upper (x)
   (declare (type (unsigned-byte 8) x)
            (optimize (speed 3) (safety 0)))
-  (if (>= #.(char-code #\z) x #.(char-code #\a))
-      (+ #.(- (char-code #\A) (char-code #\a)) x)
-      x))
+  (logior x (the (unsigned-byte 8) #.(ash 1 5))))
 
 (defun ascii-octets-to-upper-string (octets)
   (declare (type simple-byte-vector octets)
