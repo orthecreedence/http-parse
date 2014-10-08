@@ -67,10 +67,10 @@
   (declare (type simple-byte-vector headers)
            (optimize (speed 3) (safety 0)))
   (loop
-     with head = '(nil)
+     with head = (list nil)
      with tail = head
      with rn of-type simple-byte-vector = #.(make-array 2 :element-type '(unsigned-byte 8)
-                                                :initial-contents (list #.(char-code #\Return) #.(char-code #\Newline)))
+                                                        :initial-contents (list #.(char-code #\Return) #.(char-code #\Newline)))
      with start = 0
      with point = 0
      and end = 0
@@ -99,7 +99,7 @@
                                                          val
                                                          num
                                                          (babel:octets-to-string val))
-                                  nil)))
+                             nil)))
                 (setf start (+ end 2))
                 (setf point start))
               (progn
