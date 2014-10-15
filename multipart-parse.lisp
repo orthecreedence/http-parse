@@ -1,16 +1,20 @@
 (in-package :http-parse)
 
+(defparameter *scanner-content-disposition-kv-pairs*
+  (cl-ppcre:create-scanner "([a-z-]+)=\"([^\"]+)\"" :case-insensitive-mode t)
+  "Grabs the key/value pairs from a Content-Disposition header.")
+
 (defun get-header-kv-pairs (content-disposition-header-str)
   "Given a content-disposition header value, pull out the key/value pairs in it."
-  (loop for kv in (cl-irregsexp:match-split (progn (* (space)) ";" (* (space))) content-disposition-header-str)
-        append
-        (cl-irregsexp:if-match-bind ((key (+ (or (- #\a #\z)
-                                                 (- #\A #\Z)
-                                                 (= #\-))))
-                                     "=\"" value "\"")
-            kv
-            (list (intern (string-upcase key) :keyword)
-                  value))))
+  (let ((pairs nil))
+    (cl-ppcre:do-matches-as-strings (match *scanner-content-disposition-kv-pairs*
+                                      content-disposition-header-str)
+      (let* ((key (subseq match 0 (position #\= match)))
+             (first-quote (1+ (position #\" match)))
+             (value (subseq match first-quote (position #\" match :start first-quote))))
+        (push value pairs)
+        (push (intern (string-upcase key) :keyword) pairs)))
+    pairs))
 
 (defun make-multipart-parser (headers callback)
   "Make a multipart parser. Returns a closure that accepts a byte array of data

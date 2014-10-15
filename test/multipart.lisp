@@ -23,6 +23,6 @@
       (is (equalp (nth 1 checks)
                   '("power" (:content-disposition "form-data; name=\"power\"") (:name "power") #(103 114 111 119 108) t)))
       (is (equalp (nth 2 checks)
-                  '("uploadz" (:content-disposition "form-data; name=\"uploadz\"; filename=\"test.lisp\"" :content-type "application/octet-stream") (:name "uploadz" :filename "test.lisp") #(40 102 111 114 109 97 116 32 116 32 34) nil)))
+                  '("uploadz" (:content-disposition "form-data; name=\"uploadz\"; filename=\"test.lisp\"" :content-type "application/octet-stream") (:filename "test.lisp" :name "uploadz") #(40 102 111 114 109 97 116 32 116 32 34) nil)))
       (is (equalp (nth 3 checks)
-                  '("uploadz" (:content-disposition "form-data; name=\"uploadz\"; filename=\"test.lisp\"" :content-type "application/octet-stream") (:name "uploadz" :filename "test.lisp") #(111 109 103 108 111 108 119 116 102 126 37 34 41 10) t))))))
+                  '("uploadz" (:content-disposition "form-data; name=\"uploadz\"; filename=\"test.lisp\"" :content-type "application/octet-stream") (:filename "test.lisp" :name "uploadz") #(111 109 103 108 111 108 119 116 102 126 37 34 41 10) t))))))

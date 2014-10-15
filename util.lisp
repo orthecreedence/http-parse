@@ -1,8 +1,5 @@
 (in-package :http-parse)
 
-(deftype simple-byte-vector (&optional (len '*))
-  `(simple-array (unsigned-byte 8) (,len)))
-
 (defun append-array (arr1 arr2)
   "Create an array, made up of arr1 followed by arr2."
   (let ((arr1-length (length arr1))
@@ -14,32 +11,13 @@
       arr)))
 
 (defun find-non-whitespace-pos (seq &key (start 0))
-  "Find the position of the first non-whitespace character in an octet sequence."
-  (declare (type simple-byte-vector seq)
-           (optimize (speed 3) (safety 0)))
-  (let ((length (length seq)))
-    (unless (zerop length)
-      (do* ((i start (1+ i))
-            (byte (aref seq i) (aref seq i)))
-           ((= i length))
-        (unless (or (= byte 9)
-                    (= byte 13)
-                    (= byte 10)
-                    (= byte 32))
-          (return-from find-non-whitespace-pos i))))))
+  "Find the position of the first non-whitespace character in a sequence."
+  (dotimes (i (- (length seq) start))
+    (let* ((i (+ i start))
+           (byte (aref seq i)))
+      (unless (or (eq byte 9) (eq byte #\tab)
+                  (eq byte 13) (eq byte #\return)
+                  (eq byte 10) (eq byte #\newline)
+                  (eq byte 32) (eq byte #\space))
+        (return-from find-non-whitespace-pos i)))))
 
-(declaim (ftype (function ((unsigned-byte 8)) (unsigned-byte 8)) byte-to-ascii-upper)
-         (inline byte-to-ascii-upper))
-(defun byte-to-ascii-upper (x)
-  (declare (type (unsigned-byte 8) x)
-           (optimize (speed 3) (safety 0)))
-  (logior x (the (unsigned-byte 8) #.(ash 1 5))))
-
-(defun ascii-octets-to-upper-string (octets)
-  (declare (type simple-byte-vector octets)
-           (optimize (speed 3) (safety 0)))
-  (let* ((len (length octets))
-         (string (make-string len :element-type 'character)))
-    (dotimes (i len string)
-      (setf (aref string i)
-            (code-char (byte-to-ascii-upper (aref octets i)))))))
