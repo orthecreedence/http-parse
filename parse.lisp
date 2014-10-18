@@ -285,7 +285,8 @@
                         (funcall multipart-parser http-bytes))
                       (setf http-bytes (make-array 0 :element-type '(unsigned-byte 8)))
                       (when finishedp
-                        (funcall finish-callback))))
+                        (when finish-callback
+                          (funcall finish-callback)))))
                   ;; don't "stream" data until we have the full body.
                   (when (<= content-length body-length)
                     (let ((body (if (= body-length content-length)
