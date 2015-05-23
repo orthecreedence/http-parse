@@ -1,3 +1,11 @@
+# This library has been superceded by [fast-http](https://github.com/fukamachi/fast-http)
+http-parse had a good, long life and served many HTTP requests, but it's now
+time for it to stand aside and let libraries better than itself take its place.
+[fast-http](https://github.com/fukamachi/fast-http) is an incredible library
+(and is now the core parser used in [Wookie](http://wookie.lyonbros.com)).
+
+Use fast-http instead of http-parse. This library is retired.
+
 http-parse
 ==========
 A pure-lisp library for parsing HTTP requests/responses. Right now the focus for
