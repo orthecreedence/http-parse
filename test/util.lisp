@@ -1,5 +1,5 @@
 (defpackage :http-parse-test
-  (:use :cl :eos :http-parse)
+  (:use :cl :fiveam :http-parse)
   (:export #:run-tests))
 (in-package :http-parse-test)
 

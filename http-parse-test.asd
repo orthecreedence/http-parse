@@ -3,7 +3,7 @@
   :license "MIT"
   :version "0.1"
   :description "Tests for http-parse."
-  :depends-on (#:http-parse #:babel #:eos)
+  :depends-on (#:http-parse #:babel #:fiveam)
   :components
   ((:module test
     :serial t
